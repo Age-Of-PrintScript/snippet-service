@@ -1,4 +1,4 @@
-package age.of.printscript.demo
+package age.of.printscript.demo.infrastructure
 
 import age.of.printscript.demo.domain.Snippet
 import org.springframework.web.bind.annotation.GetMapping
