@@ -1,4 +1,4 @@
-package age.of.printscript.demo.application
+package age.of.printscript.demo.domain
 
 interface SnippetRepo {
     //TODO no debería devolver string es un dummy
