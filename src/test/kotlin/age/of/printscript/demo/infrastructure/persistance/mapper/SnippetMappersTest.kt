@@ -25,7 +25,7 @@ class SnippetMappersTest {
 
         val domain = entity.toDomain(content = "let a: number = 5;")
 
-        assertEquals(SnippetId(id), domain.id)
+        assertEquals(SnippetId(id.toString()), domain.id)
         assertEquals("auth0|123", domain.ownerId.value)
         assertEquals("My Snippet", domain.title)
         assertEquals("Some description", domain.description)
@@ -38,7 +38,7 @@ class SnippetMappersTest {
     fun `maps Domain Snippet to SnippetEntity`() {
         val id = UUID.randomUUID()
         val snippet = Snippet(
-            id = SnippetId(id),
+            id = SnippetId(id.toString()),
             title = "My Snippet",
             description = null,
             ownerId = UserId("auth0|123"),

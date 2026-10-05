@@ -28,8 +28,8 @@ class SnippetTestMappersTest {
 
         val summary = entity.toSummary()
 
-        assertEquals(SnippetTestId(testId), summary.id)
-        assertEquals(SnippetId(snippetId), summary.snippetId)
+        assertEquals(SnippetTestId(testId.toString()), summary.id)
+        assertEquals(SnippetId(snippetId.toString()), summary.snippetId)
         assertEquals(UserId("auth0|user"), summary.ownerId)
         assertEquals(now, summary.createdAt)
     }
@@ -49,8 +49,8 @@ class SnippetTestMappersTest {
 
         val domain = entity.toDomain(inputs, outputs)
 
-        assertEquals(SnippetTestId(testId), domain.id)
-        assertEquals(SnippetId(snippetId), domain.snippetId)
+        assertEquals(SnippetTestId(testId.toString()), domain.id)
+        assertEquals(SnippetId(snippetId.toString()), domain.snippetId)
         assertEquals(UserId("auth0|user"), domain.ownerId)
         assertEquals(inputs, domain.inputs)
         assertEquals(outputs, domain.outputs)
@@ -61,8 +61,8 @@ class SnippetTestMappersTest {
         val testId = UUID.randomUUID()
         val snippetId = UUID.randomUUID()
         val test = SnippetTest(
-            id = SnippetTestId(testId),
-            snippetId = SnippetId(snippetId),
+            id = SnippetTestId(testId.toString()),
+            snippetId = SnippetId(snippetId.toString()),
             ownerId = UserId("auth0|user"),
             inputs = listOf("10"),
             outputs = listOf("20"),
