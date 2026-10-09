@@ -6,7 +6,7 @@ COPY gradle gradle
 COPY build.gradle.kts settings.gradle.kts ./
 
 COPY src src
-# Versión con caché (descomentar más adelante para acelerar builds):
+
 RUN --mount=type=secret,id=gradle_properties,target=/root/.gradle/gradle.properties \
      --mount=type=cache,target=/root/.gradle/caches \
      ./gradlew bootJar --no-daemon -x test
