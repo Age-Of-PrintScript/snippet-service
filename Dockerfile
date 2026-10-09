@@ -1,20 +1,17 @@
 FROM eclipse-temurin:21-jdk-alpine AS builder
-
 WORKDIR /app
-
-ARG GITHUB_ACTOR
-ARG GITHUB_TOKEN
-ENV GITHUB_ACTOR=$GITHUB_ACTOR
-ENV GITHUB_TOKEN=$GITHUB_TOKEN
 
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle.kts settings.gradle.kts ./
 
-RUN ./gradlew dependencies --no-daemon
-
 COPY src src
-RUN ./gradlew bootJar --no-daemon -x test
+# Versión con caché (descomentar más adelante para acelerar builds):
+RUN --mount=type=secret,id=gradle_properties,target=/root/.gradle/gradle.properties \
+     --mount=type=cache,target=/root/.gradle/caches \
+     ./gradlew bootJar --no-daemon -x test
+
+
 
 FROM eclipse-temurin:21-jre-alpine
 

@@ -1,29 +1,34 @@
 services:
-    postgres:
-        image: postgres:17-alpine
-        container_name: snippet-postgres
-        ports:
-            -   "5432:5432"
-        environment:
-            POSTGRES_DB: snippet_db
-            POSTGRES_USER: postgres
-            POSTGRES_PASSWORD: postgres
-        volumes:
-            - postgres_data:/var/lib/postgresql/data
-    app:
-        build:
-            context: .
-            args:
-                GITHUB_ACTOR: ${GITHUB_ACTOR}
-                GITHUB_TOKEN: ${GITHUB_TOKEN}
-        container_name: snipper-service
-        ports:
-            -   "8080:8080"
-        environment:
-            SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/snippet_db
-            SPRING_DATASOURCE_USERNAME: postgres
-            SPRING_DATASOURCE_PASSWORD: postgres
-        depends_on:
-            - postgres
+  postgres:
+    image: postgres:17-alpine
+    container_name: snippet-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: snippet_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      secrets:
+        - gradle_properties
+    container_name: snippet-service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/snippet_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      - postgres
+
 volumes:
-    postgres_data:
+  postgres_data:
+
+secrets:
+  gradle_properties:
+    file: ~/.gradle/gradle.properties
