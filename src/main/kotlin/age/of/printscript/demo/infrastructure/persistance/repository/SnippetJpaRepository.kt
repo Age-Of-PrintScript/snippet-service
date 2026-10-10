@@ -7,6 +7,8 @@ import java.util.UUID
 
 interface SnippetJpaRepository : JpaRepository<SnippetEntity, SnippetEntityId> {
     fun findByIdAndIsLatestTrue(id: UUID): SnippetEntity?
+
     fun findAllByOwnerIdAndIsLatestTrue(ownerId: String): List<SnippetEntity>
+
     fun findAllByIdOrderByVersionDesc(id: UUID): List<SnippetEntity>
 }

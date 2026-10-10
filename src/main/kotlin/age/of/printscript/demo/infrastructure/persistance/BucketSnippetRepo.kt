@@ -10,7 +10,10 @@ class BucketSnippetRepo : SnippetRepository {
         TODO("Not yet implemented")
     }
 
-    override fun findByVersion(id: SnippetId, version: Int): Snippet? {
+    override fun findByVersion(
+        id: SnippetId,
+        version: Int,
+    ): Snippet? {
         TODO("Not yet implemented")
     }
 

@@ -10,25 +10,32 @@ class GetSnippet(
     private val snippetRepository: SnippetRepository,
     private val permissionGateway: PermissionGateway,
 ) : UseCase {
+    operator fun invoke(
+        id: SnippetId,
+        userId: UserId,
+        version: Int? = null,
+    ): GetSnippetResult {
+        val snippet =
+            if (version != null) {
+                snippetRepository.findByVersion(id, version)
+            } else {
+                snippetRepository.findLatest(id)
+            } ?: return GetSnippetResult.NotFound
 
-    operator fun invoke(id: SnippetId, userId: UserId, version: Int? = null): GetSnippetResult {
-        val snippet = if (version != null) {
-            snippetRepository.findByVersion(id, version)
+        return if (permissionGateway.hasReadAccess(snippet.id, userId)) {
+            GetSnippetResult.Success(snippet)
         } else {
-            snippetRepository.findLatest(id)
-        } ?: return GetSnippetResult.NotFound
-
-        val hasAccess = permissionGateway.hasReadAccess(snippet.id, userId)
-        if (!hasAccess) {
-            return GetSnippetResult.Forbidden
+            GetSnippetResult.Forbidden
         }
-
-        return GetSnippetResult.Success(snippet)
     }
 }
 
 sealed interface GetSnippetResult {
-    data class Success(val snippet: Snippet) : GetSnippetResult
+    data class Success(
+        val snippet: Snippet,
+    ) : GetSnippetResult
+
     data object NotFound : GetSnippetResult
+
     data object Forbidden : GetSnippetResult
 }

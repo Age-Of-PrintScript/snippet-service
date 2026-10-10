@@ -10,21 +10,21 @@ import org.junit.jupiter.api.Test
 import java.util.UUID
 
 class SnippetMappersTest {
-
     @Test
     fun `maps SnippetEntity to Domain Snippet`() {
         val id = UUID.randomUUID()
-        val entity = SnippetEntity(
-            id = id,
-            version = 2,
-            ownerId = "auth0|123",
-            title = "My Snippet",
-            description = "Some description",
-            language = "PrintScript",
-            languageVersion = "1.1",
-            url = "https://azure.blob/snippet-1",
-            isLatest = true,
-        )
+        val entity =
+            SnippetEntity(
+                id = id,
+                version = 2,
+                ownerId = "auth0|123",
+                title = "My Snippet",
+                description = "Some description",
+                language = "PrintScript",
+                languageVersion = "1.1",
+                url = "https://azure.blob/snippet-1",
+                isLatest = true,
+            )
 
         val domain = entity.toDomain(content = "let a: number = 5;")
 
@@ -42,17 +42,18 @@ class SnippetMappersTest {
     @Test
     fun `maps Domain Snippet to SnippetEntity`() {
         val id = UUID.randomUUID()
-        val snippet = Snippet(
-            id = SnippetId(id.toString()),
-            version = 1,
-            title = "My Snippet",
-            description = null,
-            ownerId = UserId("auth0|123"),
-            language = "PrintScript",
-            languageVersion = "1.1",
-            content = "let a: number = 5;",
-            isLatest = true,
-        )
+        val snippet =
+            Snippet(
+                id = SnippetId(id.toString()),
+                version = 1,
+                title = "My Snippet",
+                description = null,
+                ownerId = UserId("auth0|123"),
+                language = "PrintScript",
+                languageVersion = "1.1",
+                content = "let a: number = 5;",
+                isLatest = true,
+            )
 
         val entity = snippet.toEntity(url = "https://azure.blob/snippet-1")
 

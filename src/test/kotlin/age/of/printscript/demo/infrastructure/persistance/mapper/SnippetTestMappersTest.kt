@@ -11,20 +11,20 @@ import java.time.Instant
 import java.util.UUID
 
 class SnippetTestMappersTest {
-
     @Test
     fun `maps SnippetTestEntity to SnippetTestSummary`() {
         val testId = UUID.randomUUID()
         val snippetId = UUID.randomUUID()
         val now = Instant.now()
-        val entity = SnippetTestEntity(
-            id = testId,
-            snippetId = snippetId,
-            ownerId = "auth0|user",
-            url = "https://azure.blob/test-1",
-            createdAt = now,
-            updatedAt = now,
-        )
+        val entity =
+            SnippetTestEntity(
+                id = testId,
+                snippetId = snippetId,
+                ownerId = "auth0|user",
+                url = "https://azure.blob/test-1",
+                createdAt = now,
+                updatedAt = now,
+            )
 
         val summary = entity.toSummary()
 
@@ -38,12 +38,13 @@ class SnippetTestMappersTest {
     fun `maps SnippetTestEntity to Domain SnippetTest`() {
         val testId = UUID.randomUUID()
         val snippetId = UUID.randomUUID()
-        val entity = SnippetTestEntity(
-            id = testId,
-            snippetId = snippetId,
-            ownerId = "auth0|user",
-            url = "https://azure.blob/test-1",
-        )
+        val entity =
+            SnippetTestEntity(
+                id = testId,
+                snippetId = snippetId,
+                ownerId = "auth0|user",
+                url = "https://azure.blob/test-1",
+            )
         val inputs = listOf("1", "2")
         val outputs = listOf("3")
 
@@ -60,13 +61,14 @@ class SnippetTestMappersTest {
     fun `maps Domain SnippetTest to SnippetTestEntity`() {
         val testId = UUID.randomUUID()
         val snippetId = UUID.randomUUID()
-        val test = SnippetTest(
-            id = SnippetTestId(testId.toString()),
-            snippetId = SnippetId(snippetId.toString()),
-            ownerId = UserId("auth0|user"),
-            inputs = listOf("10"),
-            outputs = listOf("20"),
-        )
+        val test =
+            SnippetTest(
+                id = SnippetTestId(testId.toString()),
+                snippetId = SnippetId(snippetId.toString()),
+                ownerId = UserId("auth0|user"),
+                inputs = listOf("10"),
+                outputs = listOf("20"),
+            )
 
         val entity = test.toEntity(url = "https://azure.blob/test-1")
 

@@ -4,5 +4,8 @@ import age.of.printscript.demo.domain.SnippetId
 import age.of.printscript.demo.domain.UserId
 
 interface PermissionGateway {
-    fun hasReadAccess(snippetId: SnippetId, userId: UserId): Boolean
+    fun hasReadAccess(
+        snippetId: SnippetId,
+        userId: UserId,
+    ): Boolean
 }

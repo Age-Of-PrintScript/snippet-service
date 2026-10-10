@@ -37,3 +37,8 @@ allOpen {
     annotation("jakarta.persistence.MappedSuperclass")
     annotation("jakarta.persistence.Embeddable")
 }
+
+detekt {
+    config.setFrom(files("config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+}
