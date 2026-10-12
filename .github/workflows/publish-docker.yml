@@ -5,14 +5,21 @@ on:
         branches:
             - main
             - dev
+    pull_request:
+        branches:
+            - main
+            - dev
     workflow_dispatch:
 
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
 jobs:
-    check-and-publish:
+    check:
         runs-on: ubuntu-latest
         permissions:
             contents: read
-            packages: write
         steps:
             -   name: Checkout repository
                 uses: actions/checkout@v4
@@ -32,6 +39,17 @@ jobs:
                     GITHUB_ACTOR: ${{ github.actor }}
                 run: ./gradlew check
 
+    publish:
+        needs: check
+        if: github.event_name != 'pull_request'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            -   name: Checkout repository
+                uses: actions/checkout@v4
+
             -   name: Set up Docker Buildx
                 uses: docker/setup-buildx-action@v3
 
@@ -41,6 +59,7 @@ jobs:
                     registry: ghcr.io
                     username: ${{ github.actor }}
                     password: ${{ secrets.GITHUB_TOKEN }}
+
             -   name: Extract Docker metadata (Tags & Labels)
                 id: meta
                 uses: docker/metadata-action@v5
@@ -51,6 +70,7 @@ jobs:
                         type=sha,prefix=dev-,enable=${{ github.ref_name == 'dev' }}
                         type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
                         type=sha,prefix=,enable=${{ github.ref_name == 'main' }}
+
             -   name: Build and push Docker image
                 uses: docker/build-push-action@v6
                 with:
@@ -58,9 +78,8 @@ jobs:
                     push: true
                     tags: ${{ steps.meta.outputs.tags }}
                     labels: ${{ steps.meta.outputs.labels }}
+                    cache-from: type=gha
+                    cache-to: type=gha,mode=max
                     secrets: |
                         "gradle_properties=gpr.user=${{ github.actor }}
                         gpr.key=${{ secrets.GITHUB_TOKEN }}"
-
-
-
