@@ -1,10 +1,14 @@
 package age.of.printscript.demo.domain
 
 @JvmInline
-value class SnippetId(val value: String)
+value class SnippetId(
+    val value: String,
+)
 
 @JvmInline
-value class UserId(val value: String)
+value class UserId(
+    val value: String,
+)
 
 data class Snippet(
     val id: SnippetId,

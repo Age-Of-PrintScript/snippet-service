@@ -1,9 +1,11 @@
 package age.of.printscript.demo.domain
 
 import java.time.Instant
- 
+
 @JvmInline
-value class SnippetTestId(val value: String)
+value class SnippetTestId(
+    val value: String,
+)
 
 data class SnippetTest(
     val id: SnippetTestId,

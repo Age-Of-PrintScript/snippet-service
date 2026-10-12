@@ -16,7 +16,10 @@ fun SnippetTestEntity.toSummary(): SnippetTestSummary =
         createdAt = createdAt,
     )
 
-fun SnippetTestEntity.toDomain(inputs: List<String>, outputs: List<String>): SnippetTest =
+fun SnippetTestEntity.toDomain(
+    inputs: List<String>,
+    outputs: List<String>,
+): SnippetTest =
     SnippetTest(
         id = SnippetTestId(id.toString()),
         snippetId = SnippetId(snippetId.toString()),

@@ -1,0 +1,11 @@
+complexity:
+  LongParameterList:
+    constructorThreshold: 15
+
+naming:
+  VariableNaming:
+    excludes: ['**/test/**']
+
+performance:
+  SpreadOperator:
+    active: false
