@@ -22,7 +22,8 @@ class GetSnippet(
                 snippetRepository.findLatest(id)
             } ?: return GetSnippetResult.NotFound
 
-        return if (permissionGateway.hasReadAccess(snippet.id, userId)) {
+        val hasAccess = snippet.ownerId == userId || permissionGateway.hasReadAccess(snippet.id, userId)
+        return if (hasAccess) {
             GetSnippetResult.Success(snippet)
         } else {
             GetSnippetResult.Forbidden
