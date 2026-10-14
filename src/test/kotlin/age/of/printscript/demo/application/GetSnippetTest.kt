@@ -2,41 +2,47 @@ package age.of.printscript.demo.application
 
 import age.of.printscript.demo.domain.SnippetId
 import age.of.printscript.demo.domain.UserId
+import age.of.printscript.demo.domain.withContent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class GetSnippetTest {
+    private val expectedCode = "let a: number = 5;"
+
     @Test
     fun `returns Success when snippet exists and user is owner`() {
         val snippet = createDummySnippet(ownerId = UserId("alice"))
         val repo = InMemorySnippetRepository(listOf(snippet))
+        val storage = FakeSnippetStorage().apply { set(snippet.contentUrl, expectedCode) }
         val permissions = FakePermissionGateway()
-        val getSnippet = GetSnippet(repo, permissions)
+        val getSnippet = GetSnippet(repo, storage, permissions)
 
         val result = getSnippet(snippet.id, UserId("alice"))
 
-        assertEquals(GetSnippetResult.Success(snippet), result)
+        assertEquals(GetSnippetResult.Success(snippet.withContent(expectedCode)), result)
     }
 
     @Test
     fun `returns Success when user is not owner but has read permission`() {
         val snippet = createDummySnippet(ownerId = UserId("alice"))
         val repo = InMemorySnippetRepository(listOf(snippet))
+        val storage = FakeSnippetStorage().apply { set(snippet.contentUrl, expectedCode) }
         val allowedUsers = setOf(snippet.id to UserId("bob"))
         val permissions = FakePermissionGateway(allowedUsers = allowedUsers)
-        val getSnippet = GetSnippet(repo, permissions)
+        val getSnippet = GetSnippet(repo, storage, permissions)
 
         val result = getSnippet(snippet.id, UserId("bob"))
 
-        assertEquals(GetSnippetResult.Success(snippet), result)
+        assertEquals(GetSnippetResult.Success(snippet.withContent(expectedCode)), result)
     }
 
     @Test
     fun `returns Forbidden when user is not owner and lacks permission`() {
         val snippet = createDummySnippet(ownerId = UserId("alice"))
         val repo = InMemorySnippetRepository(listOf(snippet))
+        val storage = FakeSnippetStorage()
         val permissions = FakePermissionGateway()
-        val getSnippet = GetSnippet(repo, permissions)
+        val getSnippet = GetSnippet(repo, storage, permissions)
 
         val result = getSnippet(snippet.id, UserId("bob"))
 
@@ -46,8 +52,9 @@ class GetSnippetTest {
     @Test
     fun `returns NotFound when snippet does not exist`() {
         val repo = InMemorySnippetRepository()
+        val storage = FakeSnippetStorage()
         val permissions = FakePermissionGateway()
-        val getSnippet = GetSnippet(repo, permissions)
+        val getSnippet = GetSnippet(repo, storage, permissions)
 
         val result = getSnippet(SnippetId("inexistente"), UserId("alice"))
 
@@ -56,14 +63,15 @@ class GetSnippetTest {
 
     @Test
     fun `returns specific version when version parameter is provided`() {
-        val snippetV1 = createDummySnippet(version = 1)
-        val snippetV2 = createDummySnippet(version = 2)
+        val snippetV1 = createDummySnippet(version = 1, contentUrl = "https://azure.blob/1.ps")
+        val snippetV2 = createDummySnippet(version = 2, contentUrl = "https://azure.blob/2.ps")
         val repo = InMemorySnippetRepository(listOf(snippetV1, snippetV2))
+        val storage = FakeSnippetStorage().apply { set(snippetV1.contentUrl, expectedCode) }
         val permissions = FakePermissionGateway()
-        val getSnippet = GetSnippet(repo, permissions)
+        val getSnippet = GetSnippet(repo, storage, permissions)
 
         val result = getSnippet(snippetV1.id, UserId("alice"), version = 1)
 
-        assertEquals(GetSnippetResult.Success(snippetV1), result)
+        assertEquals(GetSnippetResult.Success(snippetV1.withContent(expectedCode)), result)
     }
 }

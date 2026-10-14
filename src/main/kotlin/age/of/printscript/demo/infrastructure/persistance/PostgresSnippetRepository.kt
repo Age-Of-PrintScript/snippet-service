@@ -19,7 +19,7 @@ class PostgresSnippetRepository(
         val uuid = UUID.fromString(id.value)
         return jpaRepository
             .findByIdAndIsLatestTrue(uuid)
-            ?.toDomain(content = "")
+            ?.toDomain()
     }
 
     override fun findByVersion(
@@ -31,16 +31,16 @@ class PostgresSnippetRepository(
         return jpaRepository
             .findById(entityId)
             .orElse(null)
-            ?.toDomain(content = "")
+            ?.toDomain()
     }
 
     override fun findAllByOwner(ownerId: UserId): List<Snippet> =
         jpaRepository
             .findAllByOwnerIdAndIsLatestTrue(ownerId.value)
-            .map { it.toDomain(content = "") }
+            .map { it.toDomain() }
 
     override fun save(snippet: Snippet): Snippet {
-        val entity = snippet.toEntity(url = "https://azure.blob/placeholder")
-        return jpaRepository.save(entity).toDomain(content = snippet.content)
+        val entity = snippet.toEntity()
+        return jpaRepository.save(entity).toDomain()
     }
 }
