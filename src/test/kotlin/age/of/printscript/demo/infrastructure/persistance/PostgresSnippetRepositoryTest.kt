@@ -110,7 +110,7 @@ class PostgresSnippetRepositoryTest {
                 ownerId = UserId("alice"),
                 language = "PrintScript",
                 languageVersion = "1.1",
-                content = "let x = 1;",
+                contentUrl = "https://azure.blob/placeholder",
                 isLatest = true,
             )
         val savedEntity =

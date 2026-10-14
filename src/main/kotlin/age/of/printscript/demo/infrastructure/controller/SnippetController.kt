@@ -2,8 +2,8 @@ package age.of.printscript.demo.infrastructure.controller
 
 import age.of.printscript.demo.application.GetSnippet
 import age.of.printscript.demo.application.GetSnippetResult
-import age.of.printscript.demo.domain.Snippet
 import age.of.printscript.demo.domain.SnippetId
+import age.of.printscript.demo.domain.SnippetWithContent
 import age.of.printscript.demo.domain.UserId
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -25,7 +25,7 @@ data class SnippetResponse(
     val content: String,
 )
 
-private fun Snippet.toResponse() =
+private fun SnippetWithContent.toResponse() =
     SnippetResponse(
         id = id.value,
         version = version,

@@ -26,7 +26,7 @@ class SnippetMappersTest {
                 isLatest = true,
             )
 
-        val domain = entity.toDomain(content = "let a: number = 5;")
+        val domain = entity.toDomain()
 
         assertEquals(SnippetId(id.toString()), domain.id)
         assertEquals(2, domain.version)
@@ -35,7 +35,7 @@ class SnippetMappersTest {
         assertEquals("Some description", domain.description)
         assertEquals("PrintScript", domain.language)
         assertEquals("1.1", domain.languageVersion)
-        assertEquals("let a: number = 5;", domain.content)
+        assertEquals("https://azure.blob/snippet-1", domain.contentUrl)
         assertTrue(domain.isLatest)
     }
 
@@ -51,11 +51,11 @@ class SnippetMappersTest {
                 ownerId = UserId("auth0|123"),
                 language = "PrintScript",
                 languageVersion = "1.1",
-                content = "let a: number = 5;",
+                contentUrl = "https://azure.blob/snippet-1",
                 isLatest = true,
             )
 
-        val entity = snippet.toEntity(url = "https://azure.blob/snippet-1")
+        val entity = snippet.toEntity()
 
         assertEquals(id, entity.id)
         assertEquals(1, entity.version)

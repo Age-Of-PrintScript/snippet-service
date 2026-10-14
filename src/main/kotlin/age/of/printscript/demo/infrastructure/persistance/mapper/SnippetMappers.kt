@@ -6,7 +6,7 @@ import age.of.printscript.demo.domain.UserId
 import age.of.printscript.demo.infrastructure.persistance.entity.SnippetEntity
 import java.util.UUID
 
-fun SnippetEntity.toDomain(content: String): Snippet =
+fun SnippetEntity.toDomain(): Snippet =
     Snippet(
         id = SnippetId(id.toString()),
         version = version,
@@ -15,11 +15,11 @@ fun SnippetEntity.toDomain(content: String): Snippet =
         ownerId = UserId(ownerId),
         language = language,
         languageVersion = languageVersion,
-        content = content,
+        contentUrl = url,
         isLatest = isLatest,
     )
 
-fun Snippet.toEntity(url: String): SnippetEntity =
+fun Snippet.toEntity(): SnippetEntity =
     SnippetEntity(
         id = UUID.fromString(id.value),
         version = version,
@@ -28,6 +28,6 @@ fun Snippet.toEntity(url: String): SnippetEntity =
         description = description,
         language = language,
         languageVersion = languageVersion,
-        url = url,
+        url = contentUrl,
         isLatest = isLatest,
     )
