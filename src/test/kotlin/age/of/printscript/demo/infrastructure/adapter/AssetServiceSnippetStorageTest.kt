@@ -1,5 +1,6 @@
 package age.of.printscript.demo.infrastructure.adapter
 
+import age.of.printscript.demo.domain.SnippetId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -29,19 +30,21 @@ class AssetServiceSnippetStorageTest {
 
     @Test
     fun `save sends PUT request with content and returns asset url`() {
-        val key = "my-snippet-1.ps"
+        val id = SnippetId("my-snippet")
+        val version = 1
+        val expectedKey = "my-snippet-1"
         val code = "let a: number = 42;"
 
         mockServer
-            .expect(requestTo("$baseUrl/v1/asset/snippets/$key"))
+            .expect(requestTo("$baseUrl/v1/asset/snippets/$expectedKey"))
             .andExpect(method(HttpMethod.PUT))
             .andExpect(content().string(code))
             .andRespond(withSuccess())
 
-        val resultUrl = storage.save(key, code)
+        val resultUrl = storage.save(id, version, code)
 
         mockServer.verify()
-        assertEquals("$baseUrl/v1/asset/snippets/$key", resultUrl)
+        assertEquals("$baseUrl/v1/asset/snippets/$expectedKey", resultUrl)
     }
 
     @Test

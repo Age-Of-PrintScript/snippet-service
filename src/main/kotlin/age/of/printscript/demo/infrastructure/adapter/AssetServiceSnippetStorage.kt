@@ -1,6 +1,7 @@
 package age.of.printscript.demo.infrastructure.adapter
 
 import age.of.printscript.demo.application.port.SnippetStorage
+import age.of.printscript.demo.domain.SnippetId
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
@@ -21,9 +22,11 @@ class AssetServiceSnippetStorage(
             .body<String>() ?: ""
 
     override fun save(
-        key: String,
+        id: SnippetId,
+        version: Int,
         content: String,
     ): String {
+        val key = "${id.value}-$version"
         assetRestClient
             .put()
             .uri("/v1/asset/{container}/{key}", container, key)

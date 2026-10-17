@@ -9,6 +9,8 @@ sealed interface ValidationResult {
 }
 
 interface Language {
+    val name: String
+
     fun validate(
         url: String,
         version: String,
