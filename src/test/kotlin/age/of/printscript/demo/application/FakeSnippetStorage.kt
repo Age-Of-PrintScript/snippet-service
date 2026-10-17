@@ -1,6 +1,7 @@
 package age.of.printscript.demo.application
 
 import age.of.printscript.demo.application.port.SnippetStorage
+import age.of.printscript.demo.domain.SnippetId
 
 class FakeSnippetStorage : SnippetStorage {
     private val storage = mutableMapOf<String, String>()
@@ -8,10 +9,11 @@ class FakeSnippetStorage : SnippetStorage {
     override fun read(url: String): String = storage[url] ?: ""
 
     override fun save(
-        key: String,
+        id: SnippetId,
+        version: Int,
         content: String,
     ): String {
-        val url = "https://azure.blob/$key"
+        val url = "https://azure.blob/${id.value}-$version"
         storage[url] = content
         return url
     }
@@ -26,4 +28,6 @@ class FakeSnippetStorage : SnippetStorage {
     ) {
         storage[url] = content
     }
+
+    fun isEmpty(): Boolean = storage.isEmpty()
 }

@@ -1,10 +1,13 @@
 package age.of.printscript.demo.application.port
 
+import age.of.printscript.demo.domain.SnippetId
+
 interface SnippetStorage {
     fun read(url: String): String
 
     fun save(
-        key: String,
+        id: SnippetId,
+        version: Int,
         content: String,
     ): String
 
