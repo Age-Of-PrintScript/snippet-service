@@ -7,6 +7,7 @@ import age.of.printscript.demo.domain.SnippetId
 import age.of.printscript.demo.domain.SnippetRepository
 import age.of.printscript.demo.domain.SnippetWithContent
 import age.of.printscript.demo.domain.UserId
+import age.of.printscript.demo.domain.ValidationError
 import age.of.printscript.demo.domain.ValidationResult
 import age.of.printscript.demo.domain.withContent
 import java.util.UUID
@@ -32,6 +33,10 @@ class CreateSnippet(
             is ValidationResult.Failure -> {
                 snippetStorage.delete(contentUrl)
                 CreateSnippetResult.InvalidSnippet(validation.errors)
+            }
+            is ValidationResult.UnsupportedVersion -> {
+                snippetStorage.delete(contentUrl)
+                CreateSnippetResult.UnsupportedVersion(languageVersion)
             }
             is ValidationResult.Success -> {
                 val snippet = snippetFromDto(createSnippet, id, contentUrl, version)
@@ -73,10 +78,14 @@ sealed interface CreateSnippetResult {
     ) : CreateSnippetResult
 
     data class InvalidSnippet(
-        val errors: List<String>,
+        val errors: List<ValidationError>,
     ) : CreateSnippetResult
 
     data class UnsupportedLanguage(
         val language: String,
+    ) : CreateSnippetResult
+
+    data class UnsupportedVersion(
+        val version: String,
     ) : CreateSnippetResult
 }
