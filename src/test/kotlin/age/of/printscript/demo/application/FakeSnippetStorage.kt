@@ -28,4 +28,6 @@ class FakeSnippetStorage : SnippetStorage {
     ) {
         storage[url] = content
     }
+
+    fun isEmpty(): Boolean = storage.isEmpty()
 }

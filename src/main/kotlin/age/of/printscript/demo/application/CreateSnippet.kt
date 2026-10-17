@@ -29,21 +29,25 @@ class CreateSnippet(
         val version = 1
         val contentUrl = snippetStorage.save(id, version, content)
 
-        return when (val validation = language.validate(contentUrl, languageVersion)) {
-            is ValidationResult.Failure -> {
-                snippetStorage.delete(contentUrl)
-                CreateSnippetResult.InvalidSnippet(validation.errors)
+        return runCatching {
+            when (val validation = language.validate(contentUrl, languageVersion)) {
+                is ValidationResult.Failure -> {
+                    snippetStorage.delete(contentUrl)
+                    CreateSnippetResult.InvalidSnippet(validation.errors)
+                }
+                is ValidationResult.UnsupportedVersion -> {
+                    snippetStorage.delete(contentUrl)
+                    CreateSnippetResult.UnsupportedVersion(languageVersion)
+                }
+                is ValidationResult.Success -> {
+                    val snippet = snippetFromDto(createSnippet, id, contentUrl, version)
+                    val saved = snippetRepository.save(snippet)
+                    CreateSnippetResult.Created(saved.withContent(content))
+                }
             }
-            is ValidationResult.UnsupportedVersion -> {
-                snippetStorage.delete(contentUrl)
-                CreateSnippetResult.UnsupportedVersion(languageVersion)
-            }
-            is ValidationResult.Success -> {
-                val snippet = snippetFromDto(createSnippet, id, contentUrl, version)
-                val saved = snippetRepository.save(snippet)
-                CreateSnippetResult.Created(saved.withContent(content))
-            }
-        }
+        }.onFailure {
+            snippetStorage.delete(contentUrl)
+        }.getOrThrow()
     }
 
     private fun snippetFromDto(
