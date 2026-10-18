@@ -15,4 +15,13 @@ class HttpClientConfiguration {
         builder
             .baseUrl(baseUrl)
             .build()
+
+    @Bean
+    fun permissionRestClient(
+        @Value("\${services.permissions.url}") baseUrl: String,
+        builder: RestClient.Builder,
+    ): RestClient =
+        builder
+            .baseUrl(baseUrl)
+            .build()
 }
