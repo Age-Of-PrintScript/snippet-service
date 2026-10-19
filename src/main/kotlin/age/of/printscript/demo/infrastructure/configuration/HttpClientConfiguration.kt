@@ -24,4 +24,13 @@ class HttpClientConfiguration {
         builder
             .baseUrl(baseUrl)
             .build()
+
+    @Bean
+    fun printscriptRestClient(
+        @Value("\${services.printscript.url}") baseUrl: String,
+        builder: RestClient.Builder,
+    ): RestClient =
+        builder
+            .baseUrl(baseUrl)
+            .build()
 }
