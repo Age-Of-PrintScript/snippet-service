@@ -8,7 +8,7 @@ class FakeLanguage(
     private val result: ValidationResult = ValidationResult.Success,
 ) : Language {
     override fun validate(
-        url: String,
+        code: String,
         version: String,
     ): ValidationResult = result
 }

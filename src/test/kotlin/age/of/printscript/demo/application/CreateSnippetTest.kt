@@ -51,7 +51,7 @@ class CreateSnippetTest {
     fun `returns InvalidSnippet with line and column and deletes stored content when parser rejects code`() {
         val repo = InMemorySnippetRepository()
         val storage = FakeSnippetStorage()
-        val errors = listOf(ValidationError(rule = "Missing semicolon", line = 1, column = 18))
+        val errors = listOf(ValidationError("Missing semicolon"))
         val language = FakeLanguage(name = "printscript", result = ValidationResult.Failure(errors))
         val createSnippet = CreateSnippet(repo, storage, listOf(language))
 
@@ -99,7 +99,7 @@ class CreateSnippetTest {
                 override val name: String = "printscript"
 
                 override fun validate(
-                    url: String,
+                    code: String,
                     version: String,
                 ): ValidationResult = error("Language service unavailable")
             }

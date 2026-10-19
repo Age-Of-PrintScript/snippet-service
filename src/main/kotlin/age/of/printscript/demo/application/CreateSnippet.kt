@@ -30,7 +30,7 @@ class CreateSnippet(
         val contentUrl = snippetStorage.save(id, version, content)
 
         return runCatching {
-            when (val validation = language.validate(contentUrl, languageVersion)) {
+            when (val validation = language.validate(content, languageVersion)) {
                 is ValidationResult.Failure -> {
                     snippetStorage.delete(contentUrl)
                     CreateSnippetResult.InvalidSnippet(validation.errors)

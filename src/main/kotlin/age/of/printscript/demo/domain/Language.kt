@@ -1,9 +1,7 @@
 package age.of.printscript.demo.domain
 
 data class ValidationError(
-    val rule: String,
-    val line: Int,
-    val column: Int,
+    val message: String,
 )
 
 sealed interface ValidationResult {
@@ -20,7 +18,7 @@ interface Language {
     val name: String
 
     fun validate(
-        url: String,
+        code: String,
         version: String,
     ): ValidationResult
 }

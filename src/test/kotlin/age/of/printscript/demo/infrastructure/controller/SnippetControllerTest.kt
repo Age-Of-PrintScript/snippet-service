@@ -87,7 +87,7 @@ class SnippetControllerTest {
 
     @Test
     fun `create returns 400 BAD REQUEST with validation errors when code is invalid`() {
-        val errors = listOf(ValidationError("Missing semicolon", 1, 18))
+        val errors = listOf(ValidationError("Missing semicolon"))
         val language = FakeLanguage(result = ValidationResult.Failure(errors))
         val controller = buildController(languages = listOf(language))
         val request =
