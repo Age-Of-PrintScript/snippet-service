@@ -87,11 +87,20 @@ class SnippetController(
         @PathVariable id: String,
         @RequestHeader("X-User-Id") userId: String,
         @RequestParam(required = false) version: Int?,
-    ): ResponseEntity<SnippetResponse> = getSnippet(SnippetId(id), UserId(userId), version).toResponseEntity()
+    ): ResponseEntity<SnippetResponse> =
+        getSnippet(
+            SnippetId(id),
+            UserId(userId),
+            version,
+        ).toResponseEntity()
 
     @PostMapping
     fun create(
         @RequestHeader("X-User-Id") userId: String,
         @RequestBody request: CreateSnippetRequest,
-    ): ResponseEntity<Any> = createSnippet(request.toDto(UserId(userId)), request.content).toResponseEntity()
+    ): ResponseEntity<Any> =
+        createSnippet(
+            request.toDto(UserId(userId)),
+            request.content,
+        ).toResponseEntity()
 }
