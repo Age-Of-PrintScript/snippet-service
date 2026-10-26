@@ -25,6 +25,7 @@ class RedisJobPublisher(
                 snippetId = snippet.id.value,
                 snippetUrl = snippet.contentUrl,
                 languageVersion = snippet.languageVersion,
+                rules = rules,
             )
         publish(request)
     }
