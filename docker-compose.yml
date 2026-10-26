@@ -46,13 +46,24 @@ services:
             SPRING_DATASOURCE_USERNAME: postgres
             SPRING_DATASOURCE_PASSWORD: postgres
             ASSET_SERVICE_URL: http://asset-service:8080
+            REDIS_HOST: redis
         depends_on:
             - postgres
             - asset-service
+            - redis
+    redis:
+        image: redis:7-alpine
+        container_name: snippet-redis
+        command: redis-server --appendonly yes
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
 
 volumes:
     postgres_data:
     blob_data:
+    redis_data:
 
 secrets:
     gradle_properties:
