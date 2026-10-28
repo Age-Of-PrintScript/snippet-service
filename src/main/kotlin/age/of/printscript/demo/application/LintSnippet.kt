@@ -1,6 +1,11 @@
 package age.of.printscript.demo.application
 
 import age.of.printscript.demo.application.port.JobPublisher
+import age.of.printscript.demo.domain.Job
+import age.of.printscript.demo.domain.JobId
+import age.of.printscript.demo.domain.JobRepository
+import age.of.printscript.demo.domain.JobStatus
+import age.of.printscript.demo.domain.JobType
 import age.of.printscript.demo.domain.LintRuleRepository
 import age.of.printscript.demo.domain.LintStatus
 import age.of.printscript.demo.domain.SnippetId
@@ -10,11 +15,14 @@ import age.of.printscript.demo.domain.SnippetRepository
 import age.of.printscript.demo.domain.UserId
 import java.util.UUID
 
+const val LINT_JOB = "LINT"
+
 class LintSnippet(
     private val jobPublisher: JobPublisher,
     private val snippetRepository: SnippetRepository,
     private val lintRuleRepository: LintRuleRepository,
     private val snippetLintStatusRepository: SnippetLintStatusRepository,
+    private val jobRepository: JobRepository,
 ) : UseCase {
     operator fun invoke(
         id: SnippetId,
@@ -25,6 +33,17 @@ class LintSnippet(
             LintSnippetResult.Forbidden
         } else {
             val rules = resolveActiveRules(userId)
+            val jobId = UUID.randomUUID().toString()
+            jobRepository.save(
+                Job(
+                    id = JobId(jobId),
+                    snippetId = snippet.id,
+                    snippetVersion = snippet.version,
+                    userId = userId,
+                    type = JobType(LINT_JOB),
+                    status = JobStatus.PENDING,
+                ),
+            )
             snippetLintStatusRepository.save(
                 SnippetLintStatus(
                     snippetId = snippet.id,
@@ -32,7 +51,6 @@ class LintSnippet(
                     status = LintStatus.PENDING,
                 ),
             )
-            val jobId = UUID.randomUUID().toString()
             jobPublisher.publishLintJob(jobId, snippet, rules)
             LintSnippetResult.Accepted(jobId)
         }
