@@ -1,6 +1,7 @@
 package age.of.printscript.demo.infrastructure.controller
 
 import age.of.printscript.demo.application.FakeJobPublisher
+import age.of.printscript.demo.application.InMemoryJobRepository
 import age.of.printscript.demo.application.InMemoryLintRuleRepository
 import age.of.printscript.demo.application.InMemorySnippetLintStatusRepository
 import age.of.printscript.demo.application.InMemorySnippetRepository
@@ -17,9 +18,10 @@ class LintControllerTest {
         snippetRepo: InMemorySnippetRepository = InMemorySnippetRepository(),
         lintRuleRepo: InMemoryLintRuleRepository = InMemoryLintRuleRepository(),
         lintStatusRepo: InMemorySnippetLintStatusRepository = InMemorySnippetLintStatusRepository(),
+        jobRepo: InMemoryJobRepository = InMemoryJobRepository(),
         jobPublisher: FakeJobPublisher = FakeJobPublisher(),
     ) = LintController(
-        lintSnippet = LintSnippet(jobPublisher, snippetRepo, lintRuleRepo, lintStatusRepo),
+        lintSnippet = LintSnippet(jobPublisher, snippetRepo, lintRuleRepo, lintStatusRepo, jobRepo),
     )
 
     @Test

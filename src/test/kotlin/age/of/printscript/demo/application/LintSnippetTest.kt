@@ -1,6 +1,9 @@
 package age.of.printscript.demo.application
 
 import age.of.printscript.demo.domain.ActiveLintRule
+import age.of.printscript.demo.domain.JobId
+import age.of.printscript.demo.domain.JobStatus
+import age.of.printscript.demo.domain.JobType
 import age.of.printscript.demo.domain.LintRule
 import age.of.printscript.demo.domain.LintRuleId
 import age.of.printscript.demo.domain.LintStatus
@@ -13,7 +16,7 @@ import org.junit.jupiter.api.Test
 
 class LintSnippetTest {
     @Test
-    fun `returns Accepted, saves PENDING status and publishes lint job when user is owner`() {
+    fun `returns Accepted, saves PENDING job and lint status, and publishes lint job when user is owner`() {
         val owner = UserId("alice")
         val snippet = createDummySnippet(ownerId = owner, version = 2)
         val snippetRepo = InMemorySnippetRepository(listOf(snippet))
@@ -30,13 +33,22 @@ class LintSnippetTest {
             )
         val lintRuleRepo = InMemoryLintRuleRepository(lintRules, activeRules)
         val lintStatusRepo = InMemorySnippetLintStatusRepository()
+        val jobRepo = InMemoryJobRepository()
         val jobPublisher = FakeJobPublisher()
-        val lintSnippet = LintSnippet(jobPublisher, snippetRepo, lintRuleRepo, lintStatusRepo)
+        val lintSnippet = LintSnippet(jobPublisher, snippetRepo, lintRuleRepo, lintStatusRepo, jobRepo)
 
         val result = lintSnippet(snippet.id, owner)
 
         assertTrue(result is LintSnippetResult.Accepted)
         val accepted = result as LintSnippetResult.Accepted
+
+        val savedJob = jobRepo.findById(JobId(accepted.jobId))
+        assertNotNull(savedJob)
+        assertEquals(snippet.id, savedJob?.snippetId)
+        assertEquals(snippet.version, savedJob?.snippetVersion)
+        assertEquals(owner, savedJob?.userId)
+        assertEquals(JobType(LINT_JOB), savedJob?.type)
+        assertEquals(JobStatus.PENDING, savedJob?.status)
 
         val savedStatus = lintStatusRepo.findByVersion(snippet.id, snippet.version)
         assertNotNull(savedStatus)
@@ -64,8 +76,9 @@ class LintSnippetTest {
         val activeRules = listOf(ActiveLintRule(owner, LintRuleId(1), null))
         val lintRuleRepo = InMemoryLintRuleRepository(lintRules, activeRules)
         val lintStatusRepo = InMemorySnippetLintStatusRepository()
+        val jobRepo = InMemoryJobRepository()
         val jobPublisher = FakeJobPublisher()
-        val lintSnippet = LintSnippet(jobPublisher, snippetRepo, lintRuleRepo, lintStatusRepo)
+        val lintSnippet = LintSnippet(jobPublisher, snippetRepo, lintRuleRepo, lintStatusRepo, jobRepo)
 
         lintSnippet(snippet.id, owner)
 
@@ -78,8 +91,9 @@ class LintSnippetTest {
         val snippetRepo = InMemorySnippetRepository()
         val lintRuleRepo = InMemoryLintRuleRepository()
         val lintStatusRepo = InMemorySnippetLintStatusRepository()
+        val jobRepo = InMemoryJobRepository()
         val jobPublisher = FakeJobPublisher()
-        val lintSnippet = LintSnippet(jobPublisher, snippetRepo, lintRuleRepo, lintStatusRepo)
+        val lintSnippet = LintSnippet(jobPublisher, snippetRepo, lintRuleRepo, lintStatusRepo, jobRepo)
 
         val result = lintSnippet(SnippetId("non-existent"), UserId("alice"))
 
@@ -93,8 +107,9 @@ class LintSnippetTest {
         val snippetRepo = InMemorySnippetRepository(listOf(snippet))
         val lintRuleRepo = InMemoryLintRuleRepository()
         val lintStatusRepo = InMemorySnippetLintStatusRepository()
+        val jobRepo = InMemoryJobRepository()
         val jobPublisher = FakeJobPublisher()
-        val lintSnippet = LintSnippet(jobPublisher, snippetRepo, lintRuleRepo, lintStatusRepo)
+        val lintSnippet = LintSnippet(jobPublisher, snippetRepo, lintRuleRepo, lintStatusRepo, jobRepo)
 
         val result = lintSnippet(snippet.id, UserId("bob"))
 

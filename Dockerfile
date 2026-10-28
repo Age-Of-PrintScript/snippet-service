@@ -5,13 +5,17 @@ COPY gradlew .
 COPY gradle gradle
 COPY build.gradle.kts settings.gradle.kts ./
 
+RUN chmod +x gradlew
+
+RUN --mount=type=secret,id=gradle_properties,target=/root/.gradle/gradle.properties \
+    --mount=type=cache,target=/root/.gradle/caches \
+    ./gradlew dependencies --no-daemon
+
 COPY src src
 
 RUN --mount=type=secret,id=gradle_properties,target=/root/.gradle/gradle.properties \
-     --mount=type=cache,target=/root/.gradle/caches \
-     ./gradlew bootJar --no-daemon -x test
-
-
+    --mount=type=cache,target=/root/.gradle/caches \
+    ./gradlew bootJar --no-daemon -x test
 
 FROM eclipse-temurin:21-jre-alpine
 
