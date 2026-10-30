@@ -8,4 +8,10 @@ interface JobPublisher {
         snippet: Snippet,
         rules: Map<String, String?>,
     )
+
+    fun publishFormatJob(
+        jobId: String,
+        snippet: Snippet,
+        rules: Map<String, String?>,
+    )
 }
