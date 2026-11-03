@@ -10,6 +10,16 @@ version = "0.0.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven {
+        name = "GitHubPackages"
+        url = uri("https://maven.pkg.github.com/Age-Of-PrintScript/printscript-jobs")
+        credentials {
+            username = System.getenv("GITHUB_ACTOR") ?: providers.gradleProperty("gpr.user").orNull
+            password = System.getenv("GITHUB_TOKEN")
+                ?: providers.gradleProperty("gpr.token").orNull
+                    ?: providers.gradleProperty("gpr.key").orNull
+        }
+    }
 }
 
 dependencies {
@@ -19,6 +29,8 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("printscript.grupo1:printscript-jobs:1.0.1")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
     runtimeOnly("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
@@ -36,4 +48,38 @@ allOpen {
     annotation("jakarta.persistence.Entity")
     annotation("jakarta.persistence.MappedSuperclass")
     annotation("jakarta.persistence.Embeddable")
+}
+
+detekt {
+    config.setFrom(files("config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+}
+
+val jacocoExclusions = listOf(
+    "**/DemoApplication*",
+    "**/configuration/**",
+)
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    classDirectories.setFrom(
+        files(
+            classDirectories.files.map {
+                fileTree(it) {
+                    exclude(jacocoExclusions)
+                }
+            },
+        ),
+    )
+}
+
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    classDirectories.setFrom(
+        files(
+            classDirectories.files.map {
+                fileTree(it) {
+                    exclude(jacocoExclusions)
+                }
+            },
+        ),
+    )
 }

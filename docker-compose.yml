@@ -3,27 +3,68 @@ services:
         image: postgres:17-alpine
         container_name: snippet-postgres
         ports:
-            -   "5432:5432"
+            - "5432:5432"
         environment:
             POSTGRES_DB: snippet_db
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
         volumes:
             - postgres_data:/var/lib/postgresql/data
+
+    azurite:
+        image: mcr.microsoft.com/azure-storage/azurite
+        container_name: snippet-azurite
+        ports:
+            - "10000:10000"
+            - "10001:10001"
+            - "10002:10002"
+        volumes:
+            - blob_data:/workspace
+
+    asset-service:
+        image: ghcr.io/austral-ingsis/snippet-asset-service:main.14
+        container_name: snippet-asset-service
+        ports:
+            - "8083:8080"
+        environment:
+            AZURE_HOST: "http://azurite"
+            NEW_RELIC_APP_NAME: "asset-service"
+            NEW_RELIC_AGENT_ENABLED: "false"
+        depends_on:
+            - azurite
+
     app:
         build:
             context: .
-            args:
-                GITHUB_ACTOR: ${GITHUB_ACTOR}
-                GITHUB_TOKEN: ${GITHUB_TOKEN}
-        container_name: snipper-service
+            secrets:
+                - gradle_properties
+        container_name: snippet-service
         ports:
-            -   "8080:8080"
+            - "8080:8080"
         environment:
             SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/snippet_db
             SPRING_DATASOURCE_USERNAME: postgres
             SPRING_DATASOURCE_PASSWORD: postgres
+            ASSET_SERVICE_URL: http://asset-service:8080
+            REDIS_HOST: redis
         depends_on:
             - postgres
+            - asset-service
+            - redis
+    redis:
+        image: redis:7-alpine
+        container_name: snippet-redis
+        command: redis-server --appendonly yes
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+
 volumes:
     postgres_data:
+    blob_data:
+    redis_data:
+
+secrets:
+    gradle_properties:
+        file: ~/.gradle/gradle.properties

@@ -1,0 +1,59 @@
+package age.of.printscript.demo.jobs.infrastructure.adapter
+
+import age.of.printscript.demo.format.application.port.FormatJobPublisher
+import age.of.printscript.demo.lint.application.port.LintJobPublisher
+import age.of.printscript.demo.snippet.domain.Snippet
+import age.of.printscript.jobs.FormatJobRequest
+import age.of.printscript.jobs.JobRequest
+import age.of.printscript.jobs.JobSerializer
+import age.of.printscript.jobs.LintJobRequest
+import age.of.printscript.jobs.PAYLOAD_FIELD
+import age.of.printscript.jobs.QueueNames
+import org.springframework.data.redis.core.StringRedisTemplate
+import org.springframework.stereotype.Component
+
+@Component
+class RedisJobPublisher(
+    private val redisTemplate: StringRedisTemplate,
+) : LintJobPublisher,
+    FormatJobPublisher {
+    override fun publishLintJob(
+        jobId: String,
+        snippet: Snippet,
+        rules: Map<String, String?>,
+    ) {
+        val request =
+            LintJobRequest(
+                jobId = jobId,
+                snippetId = snippet.id.value,
+                snippetUrl = snippet.contentUrl,
+                languageVersion = snippet.languageVersion,
+                rules = rules,
+            )
+        publish(request)
+    }
+
+    override fun publishFormatJob(
+        jobId: String,
+        snippet: Snippet,
+        rules: Map<String, String?>,
+    ) {
+        val request =
+            FormatJobRequest(
+                jobId = jobId,
+                snippetId = snippet.id.value,
+                snippetUrl = snippet.contentUrl,
+                languageVersion = snippet.languageVersion,
+                rules = rules,
+            )
+        publish(request)
+    }
+
+    private fun publish(job: JobRequest) {
+        val serialized = JobSerializer.serializeRequest(job)
+        redisTemplate.opsForStream<String, String>().add(
+            QueueNames.REQUESTS_STREAM,
+            mapOf(PAYLOAD_FIELD to serialized),
+        )
+    }
+}
