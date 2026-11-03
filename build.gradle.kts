@@ -54,3 +54,32 @@ detekt {
     config.setFrom(files("config/detekt/detekt.yml"))
     buildUponDefaultConfig = true
 }
+
+val jacocoExclusions = listOf(
+    "**/DemoApplication*",
+    "**/configuration/**",
+)
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    classDirectories.setFrom(
+        files(
+            classDirectories.files.map {
+                fileTree(it) {
+                    exclude(jacocoExclusions)
+                }
+            },
+        ),
+    )
+}
+
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    classDirectories.setFrom(
+        files(
+            classDirectories.files.map {
+                fileTree(it) {
+                    exclude(jacocoExclusions)
+                }
+            },
+        ),
+    )
+}
