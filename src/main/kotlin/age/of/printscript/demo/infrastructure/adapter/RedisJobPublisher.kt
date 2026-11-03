@@ -2,6 +2,7 @@ package age.of.printscript.demo.infrastructure.adapter
 
 import age.of.printscript.demo.application.port.JobPublisher
 import age.of.printscript.demo.domain.Snippet
+import age.of.printscript.jobs.FormatJobRequest
 import age.of.printscript.jobs.JobRequest
 import age.of.printscript.jobs.JobSerializer
 import age.of.printscript.jobs.LintJobRequest
@@ -21,6 +22,22 @@ class RedisJobPublisher(
     ) {
         val request =
             LintJobRequest(
+                jobId = jobId,
+                snippetId = snippet.id.value,
+                snippetUrl = snippet.contentUrl,
+                languageVersion = snippet.languageVersion,
+                rules = rules,
+            )
+        publish(request)
+    }
+
+    override fun publishFormatJob(
+        jobId: String,
+        snippet: Snippet,
+        rules: Map<String, String?>,
+    ) {
+        val request =
+            FormatJobRequest(
                 jobId = jobId,
                 snippetId = snippet.id.value,
                 snippetUrl = snippet.contentUrl,
