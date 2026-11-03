@@ -8,7 +8,10 @@ import age.of.printscript.demo.format.domain.FormatRuleId
 import age.of.printscript.demo.jobs.application.FakeJobPublisher
 import age.of.printscript.demo.jobs.application.InMemoryJobRepository
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
+import age.of.printscript.demo.snippet.application.createDummySnippet
+import age.of.printscript.demo.snippet.domain.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus
 
@@ -54,5 +57,37 @@ class FormatControllerTest {
         assertEquals(HttpStatus.OK, response.statusCode)
         val body = response.body
         assertEquals(0, body?.rules?.size)
+    }
+
+    @Test
+    fun `returns 202 ACCEPTED with jobId when snippet exists and user is owner`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"))
+        val snippetRepo = InMemorySnippetRepository(listOf(snippet))
+        val controller = buildController(snippetRepo = snippetRepo)
+
+        val response = controller.format(snippet.id.value, "alice")
+
+        assertEquals(HttpStatus.ACCEPTED, response.statusCode)
+        assertNotNull(response.body?.jobId)
+    }
+
+    @Test
+    fun `returns 404 NOT FOUND when snippet does not exist`() {
+        val controller = buildController()
+
+        val response = controller.format("non-existent", "alice")
+
+        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
+    }
+
+    @Test
+    fun `returns 403 FORBIDDEN when user is not the snippet owner`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"))
+        val snippetRepo = InMemorySnippetRepository(listOf(snippet))
+        val controller = buildController(snippetRepo = snippetRepo)
+
+        val response = controller.format(snippet.id.value, "bob")
+
+        assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
     }
 }

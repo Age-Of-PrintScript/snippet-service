@@ -10,6 +10,7 @@ import age.of.printscript.demo.jobs.domain.JobStatus
 import age.of.printscript.demo.jobs.domain.JobType
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
 import age.of.printscript.demo.snippet.application.createDummySnippet
+import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -144,5 +145,34 @@ class FormatSnippetTest {
         val published = jobPublisher.publishedFormatJobs.first()
         val expected = mapOf("lines-after-println" to "5")
         assertEquals(expected, published.rules)
+    }
+
+    @Test
+    fun `returns NotFound when snippet does not exist`() {
+        val snippetRepo = InMemorySnippetRepository()
+        val formatRuleRepo = InMemoryFormatRuleRepository()
+        val jobRepo = InMemoryJobRepository()
+        val jobPublisher = FakeJobPublisher()
+        val formatSnippet = FormatSnippet(jobPublisher, formatRuleRepo, snippetRepo, jobRepo)
+
+        val result = formatSnippet(SnippetId("non-existent"), UserId("alice"))
+
+        assertEquals(FormatSnippetResult.NotFound, result)
+        assertTrue(jobPublisher.publishedFormatJobs.isEmpty())
+    }
+
+    @Test
+    fun `returns Forbidden when user is not the snippet owner`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"))
+        val snippetRepo = InMemorySnippetRepository(listOf(snippet))
+        val formatRuleRepo = InMemoryFormatRuleRepository()
+        val jobRepo = InMemoryJobRepository()
+        val jobPublisher = FakeJobPublisher()
+        val formatSnippet = FormatSnippet(jobPublisher, formatRuleRepo, snippetRepo, jobRepo)
+
+        val result = formatSnippet(snippet.id, UserId("bob"))
+
+        assertEquals(FormatSnippetResult.Forbidden, result)
+        assertTrue(jobPublisher.publishedFormatJobs.isEmpty())
     }
 }
