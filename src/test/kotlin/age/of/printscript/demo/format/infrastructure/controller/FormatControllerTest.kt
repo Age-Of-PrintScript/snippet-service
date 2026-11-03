@@ -6,6 +6,7 @@ import age.of.printscript.demo.format.application.InMemoryFormatRuleRepository
 import age.of.printscript.demo.format.domain.FormatRule
 import age.of.printscript.demo.format.domain.FormatRuleId
 import age.of.printscript.demo.jobs.application.FakeJobPublisher
+import age.of.printscript.demo.jobs.application.InMemoryJobRepository
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -15,9 +16,10 @@ class FormatControllerTest {
     private fun buildController(
         snippetRepo: InMemorySnippetRepository = InMemorySnippetRepository(),
         formatRuleRepo: InMemoryFormatRuleRepository = InMemoryFormatRuleRepository(),
+        jobRepo: InMemoryJobRepository = InMemoryJobRepository(),
         jobPublisher: FakeJobPublisher = FakeJobPublisher(),
     ) = FormatController(
-        formatSnippet = FormatSnippet(jobPublisher, formatRuleRepo, snippetRepo),
+        formatSnippet = FormatSnippet(jobPublisher, formatRuleRepo, snippetRepo, jobRepo),
         getFormatRules = GetFormatRules(formatRuleRepo),
     )
 
