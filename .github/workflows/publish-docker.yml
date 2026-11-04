@@ -98,7 +98,6 @@ jobs:
                     envs: DEPLOY_ENV
                     script: |
                         set -e
-                        SERVICE=$(docker service ls --filter name=snippet-service --format '{{.Name}}' | head -n 1)
                         docker service update --force --with-registry-auth \
                             --image ghcr.io/age-of-printscript/snippet-service:${DEPLOY_ENV} \
-                            "$SERVICE"
+                            ingsis_snippet-service
