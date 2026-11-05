@@ -6,9 +6,10 @@ import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -32,10 +33,10 @@ class LintController(
     @PostMapping("/{id}")
     fun lint(
         @PathVariable id: String,
-        @RequestHeader("X-User-Id") userId: String,
+        @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<LintJobAcceptedResponse> =
         lintSnippet(
             SnippetId(id),
-            UserId(userId),
+            UserId(jwt.subject),
         ).toResponseEntity()
 }
