@@ -7,6 +7,7 @@ import age.of.printscript.demo.lint.application.InMemorySnippetLintStatusReposit
 import age.of.printscript.demo.lint.application.LintSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
 import age.of.printscript.demo.snippet.application.createDummySnippet
+import age.of.printscript.demo.snippet.application.testJwt
 import age.of.printscript.demo.snippet.domain.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -30,7 +31,7 @@ class LintControllerTest {
         val snippetRepo = InMemorySnippetRepository(listOf(snippet))
         val controller = buildController(snippetRepo = snippetRepo)
 
-        val response = controller.lint(snippet.id.value, "alice")
+        val response = controller.lint(snippet.id.value, testJwt("alice"))
 
         assertEquals(HttpStatus.ACCEPTED, response.statusCode)
         assertNotNull(response.body?.jobId)
@@ -40,7 +41,7 @@ class LintControllerTest {
     fun `returns 404 NOT FOUND when snippet does not exist`() {
         val controller = buildController()
 
-        val response = controller.lint("non-existent", "alice")
+        val response = controller.lint("non-existent", testJwt("alice"))
 
         assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
     }
@@ -51,7 +52,7 @@ class LintControllerTest {
         val snippetRepo = InMemorySnippetRepository(listOf(snippet))
         val controller = buildController(snippetRepo = snippetRepo)
 
-        val response = controller.lint(snippet.id.value, "bob")
+        val response = controller.lint(snippet.id.value, testJwt("bob"))
 
         assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
     }
