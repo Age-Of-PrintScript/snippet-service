@@ -29,6 +29,11 @@ class InMemorySnippetRepository(
         }
 
     override fun save(snippet: Snippet): Snippet {
+        if (snippet.isLatest) {
+            snippets.replaceAll {
+                if (it.id == snippet.id && it.isLatest) it.copy(isLatest = false) else it
+            }
+        }
         snippets.removeIf {
             it.id == snippet.id && it.version == snippet.version
         }

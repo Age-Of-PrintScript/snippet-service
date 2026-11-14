@@ -5,6 +5,8 @@ import age.of.printscript.demo.snippet.application.CreateSnippetDto
 import age.of.printscript.demo.snippet.application.CreateSnippetResult
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.GetSnippetResult
+import age.of.printscript.demo.snippet.application.UpdateSnippet
+import age.of.printscript.demo.snippet.application.UpdateSnippetResult
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.SnippetWithContent
 import age.of.printscript.demo.snippet.domain.UserId
@@ -13,6 +15,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
@@ -24,6 +27,10 @@ data class CreateSnippetRequest(
     val description: String?,
     val language: String,
     val languageVersion: String,
+    val content: String,
+)
+
+data class UpdateSnippetRequest(
     val content: String,
 )
 
@@ -76,11 +83,24 @@ private fun CreateSnippetResult.toResponseEntity(): ResponseEntity<Any> =
             ResponseEntity.badRequest().body(mapOf("error" to "Unsupported version: $version"))
     }
 
+private fun UpdateSnippetResult.toResponseEntity(): ResponseEntity<Any> =
+    when (this) {
+        is UpdateSnippetResult.Updated -> ResponseEntity.ok(snippet.toResponse())
+        is UpdateSnippetResult.NotFound -> ResponseEntity.notFound().build()
+        is UpdateSnippetResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        is UpdateSnippetResult.InvalidSnippet -> ResponseEntity.badRequest().body(errors)
+        is UpdateSnippetResult.UnsupportedLanguage ->
+            ResponseEntity.badRequest().body(mapOf("error" to "Unsupported language: $language"))
+        is UpdateSnippetResult.UnsupportedVersion ->
+            ResponseEntity.badRequest().body(mapOf("error" to "Unsupported version: $version"))
+    }
+
 @RestController
 @RequestMapping("/snippet")
 class SnippetController(
     private val getSnippet: GetSnippet,
     private val createSnippet: CreateSnippet,
+    private val updateSnippet: UpdateSnippet,
 ) {
     @GetMapping("/{id}")
     fun get(
@@ -101,6 +121,18 @@ class SnippetController(
     ): ResponseEntity<Any> =
         createSnippet(
             request.toDto(UserId(userId)),
+            request.content,
+        ).toResponseEntity()
+
+    @PutMapping("/{id}")
+    fun update(
+        @PathVariable id: String,
+        @RequestHeader("X-User-Id") userId: String,
+        @RequestBody request: UpdateSnippetRequest,
+    ): ResponseEntity<Any> =
+        updateSnippet(
+            SnippetId(id),
+            UserId(userId),
             request.content,
         ).toResponseEntity()
 }

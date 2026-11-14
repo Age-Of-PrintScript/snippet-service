@@ -6,6 +6,7 @@ import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
+import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.Language
 import age.of.printscript.demo.snippet.domain.UserId
@@ -26,6 +27,7 @@ class SnippetControllerTest {
     ) = SnippetController(
         getSnippet = GetSnippet(repo, storage, permissions),
         createSnippet = CreateSnippet(repo, storage, languages),
+        updateSnippet = UpdateSnippet(repo, storage, languages),
     )
 
     @Test
@@ -103,5 +105,80 @@ class SnippetControllerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals(errors, response.body)
+    }
+
+    @Test
+    fun `update returns 200 OK with updated SnippetResponse when snippet is valid`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"), version = 1)
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val controller = buildController(repo = repo)
+        val updatedCode = "let b: number = 10;"
+
+        val response = controller.update(snippet.id.value, "alice", UpdateSnippetRequest(updatedCode))
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        val body = response.body as SnippetResponse
+        assertEquals(snippet.id.value, body.id)
+        assertEquals(2, body.version)
+        assertEquals(updatedCode, body.content)
+    }
+
+    @Test
+    fun `update returns 404 NOT FOUND when snippet does not exist`() {
+        val controller = buildController()
+
+        val response = controller.update("non-existent", "alice", UpdateSnippetRequest(expectedCode))
+
+        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
+    }
+
+    @Test
+    fun `update returns 403 FORBIDDEN when user is not the owner`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"), version = 1)
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val controller = buildController(repo = repo)
+
+        val response = controller.update(snippet.id.value, "bob", UpdateSnippetRequest(expectedCode))
+
+        assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
+    }
+
+    @Test
+    fun `update returns 400 BAD REQUEST with validation errors when code is invalid`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"), version = 1)
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val errors = listOf(ValidationError("Missing semicolon"))
+        val language = FakeLanguage(result = ValidationResult.Failure(errors))
+        val controller = buildController(repo = repo, languages = listOf(language))
+
+        val response = controller.update(snippet.id.value, "alice", UpdateSnippetRequest("let a: number = 5"))
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        assertEquals(errors, response.body)
+    }
+
+    @Test
+    fun `update returns 400 BAD REQUEST when language is unsupported`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"), version = 1).copy(language = "python")
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val controller = buildController(repo = repo)
+
+        val response = controller.update(snippet.id.value, "alice", UpdateSnippetRequest(expectedCode))
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        assertEquals(mapOf("error" to "Unsupported language: python"), response.body)
+    }
+
+    @Test
+    fun `update returns 400 BAD REQUEST when language version is unsupported`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"), version = 1).copy(languageVersion = "9.9")
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val language = FakeLanguage(result = ValidationResult.UnsupportedVersion)
+        val controller = buildController(repo = repo, languages = listOf(language))
+
+        val response = controller.update(snippet.id.value, "alice", UpdateSnippetRequest(expectedCode))
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        assertEquals(mapOf("error" to "Unsupported version: 9.9"), response.body)
     }
 }
