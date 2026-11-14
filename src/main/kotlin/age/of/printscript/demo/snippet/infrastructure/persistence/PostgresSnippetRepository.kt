@@ -9,6 +9,7 @@ import age.of.printscript.demo.snippet.infrastructure.persistence.mapper.toDomai
 import age.of.printscript.demo.snippet.infrastructure.persistence.mapper.toEntity
 import age.of.printscript.demo.snippet.infrastructure.persistence.repository.SnippetJpaRepository
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Repository
@@ -39,7 +40,16 @@ class PostgresSnippetRepository(
             .findAllByOwnerIdAndIsLatestTrue(ownerId.value)
             .map { it.toDomain() }
 
+    @Transactional
     override fun save(snippet: Snippet): Snippet {
+        val uuid = UUID.fromString(snippet.id.value)
+        if (snippet.isLatest) {
+            jpaRepository.findByIdAndIsLatestTrue(uuid)?.let { currentLatest ->
+                if (currentLatest.version != snippet.version) {
+                    jpaRepository.save(currentLatest.toDomain().copy(isLatest = false).toEntity())
+                }
+            }
+        }
         val entity = snippet.toEntity()
         return jpaRepository.save(entity).toDomain()
     }
