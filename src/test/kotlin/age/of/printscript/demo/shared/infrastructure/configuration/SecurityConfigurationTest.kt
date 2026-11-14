@@ -6,6 +6,7 @@ import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
+import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.infrastructure.controller.SnippetController
@@ -27,6 +28,7 @@ import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder
@@ -55,6 +57,12 @@ class SecurityConfigurationTest {
         fun createSnippet(): CreateSnippet {
             val languages = listOf(FakeLanguage())
             return CreateSnippet(InMemorySnippetRepository(), FakeSnippetStorage(), languages)
+        }
+
+        @Bean
+        fun updateSnippet(): UpdateSnippet {
+            val languages = listOf(FakeLanguage())
+            return UpdateSnippet(InMemorySnippetRepository(), FakeSnippetStorage(), languages)
         }
     }
 
@@ -91,6 +99,16 @@ class SecurityConfigurationTest {
                 post("/snippet")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(createBody),
+            ).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `PUT snippet without token returns 401`() {
+        mockMvc
+            .perform(
+                put("/snippet/any")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"content":"x"}"""),
             ).andExpect(status().isUnauthorized)
     }
 

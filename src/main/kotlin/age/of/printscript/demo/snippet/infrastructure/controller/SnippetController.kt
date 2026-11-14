@@ -128,12 +128,12 @@ class SnippetController(
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: String,
-        @RequestHeader("X-User-Id") userId: String,
+        @AuthenticationPrincipal jwt: Jwt,
         @RequestBody request: UpdateSnippetRequest,
     ): ResponseEntity<Any> =
         updateSnippet(
             SnippetId(id),
-            UserId(userId),
+            UserId(jwt.subject),
             request.content,
         ).toResponseEntity()
 }

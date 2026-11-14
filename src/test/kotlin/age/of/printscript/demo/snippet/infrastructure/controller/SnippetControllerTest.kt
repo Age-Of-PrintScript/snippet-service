@@ -115,7 +115,7 @@ class SnippetControllerTest {
         val controller = buildController(repo = repo)
         val updatedCode = "let b: number = 10;"
 
-        val response = controller.update(snippet.id.value, "alice", UpdateSnippetRequest(updatedCode))
+        val response = controller.update(snippet.id.value, testJwt("alice"), UpdateSnippetRequest(updatedCode))
 
         assertEquals(HttpStatus.OK, response.statusCode)
         val body = response.body as SnippetResponse
@@ -128,7 +128,7 @@ class SnippetControllerTest {
     fun `update returns 404 NOT FOUND when snippet does not exist`() {
         val controller = buildController()
 
-        val response = controller.update("non-existent", "alice", UpdateSnippetRequest(expectedCode))
+        val response = controller.update("non-existent", testJwt("alice"), UpdateSnippetRequest(expectedCode))
 
         assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
     }
@@ -139,7 +139,7 @@ class SnippetControllerTest {
         val repo = InMemorySnippetRepository(listOf(snippet))
         val controller = buildController(repo = repo)
 
-        val response = controller.update(snippet.id.value, "bob", UpdateSnippetRequest(expectedCode))
+        val response = controller.update(snippet.id.value, testJwt("bob"), UpdateSnippetRequest(expectedCode))
 
         assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
     }
@@ -152,7 +152,7 @@ class SnippetControllerTest {
         val language = FakeLanguage(result = ValidationResult.Failure(errors))
         val controller = buildController(repo = repo, languages = listOf(language))
 
-        val response = controller.update(snippet.id.value, "alice", UpdateSnippetRequest("let a: number = 5"))
+        val response = controller.update(snippet.id.value, testJwt("alice"), UpdateSnippetRequest("let a: number = 5"))
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals(errors, response.body)
@@ -164,7 +164,7 @@ class SnippetControllerTest {
         val repo = InMemorySnippetRepository(listOf(snippet))
         val controller = buildController(repo = repo)
 
-        val response = controller.update(snippet.id.value, "alice", UpdateSnippetRequest(expectedCode))
+        val response = controller.update(snippet.id.value, testJwt("alice"), UpdateSnippetRequest(expectedCode))
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals(mapOf("error" to "Unsupported language: python"), response.body)
@@ -177,7 +177,7 @@ class SnippetControllerTest {
         val language = FakeLanguage(result = ValidationResult.UnsupportedVersion)
         val controller = buildController(repo = repo, languages = listOf(language))
 
-        val response = controller.update(snippet.id.value, "alice", UpdateSnippetRequest(expectedCode))
+        val response = controller.update(snippet.id.value, testJwt("alice"), UpdateSnippetRequest(expectedCode))
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals(mapOf("error" to "Unsupported version: 9.9"), response.body)
