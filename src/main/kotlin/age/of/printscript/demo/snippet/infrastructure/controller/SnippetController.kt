@@ -148,10 +148,10 @@ class SnippetController(
     @PostMapping("/{id}/test")
     fun createTest(
         @PathVariable id: String,
-        @RequestHeader("X-User-Id") userId: String,
+        @AuthenticationPrincipal jwt: Jwt,
         @RequestBody request: CreateSnippetTestRequest,
     ): ResponseEntity<SnippetTestResponse> =
         createSnippetTest(
-            request.toDto(SnippetId(id), UserId(userId)),
+            request.toDto(SnippetId(id), UserId(jwt.subject)),
         ).toResponseEntity()
 }

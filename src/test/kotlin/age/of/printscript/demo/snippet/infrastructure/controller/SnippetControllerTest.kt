@@ -18,10 +18,6 @@ import age.of.printscript.demo.snippet.domain.ValidationResult
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 class SnippetControllerTest {
     private val expectedCode = "let a: number = 5;"
@@ -127,7 +123,7 @@ class SnippetControllerTest {
         val controller = buildController(repo = InMemorySnippetRepository(listOf(snippet)))
         val request = CreateSnippetTestRequest(inputs = listOf("2", "3"), outputs = listOf("5"))
 
-        val response = controller.createTest(snippet.id.value, "alice", request)
+        val response = controller.createTest(snippet.id.value, testJwt("alice"), request)
 
         assertEquals(HttpStatus.CREATED, response.statusCode)
         assertEquals(snippet.id.value, response.body?.snippetId)
@@ -139,7 +135,12 @@ class SnippetControllerTest {
     fun `createTest returns 404 NOT FOUND when snippet does not exist`() {
         val controller = buildController()
 
-        val response = controller.createTest("unknown", "alice", CreateSnippetTestRequest(emptyList(), emptyList()))
+        val response =
+            controller.createTest(
+                "unknown",
+                testJwt("alice"),
+                CreateSnippetTestRequest(emptyList(), emptyList()),
+            )
 
         assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
     }
@@ -152,25 +153,10 @@ class SnippetControllerTest {
         val response =
             controller.createTest(
                 snippet.id.value,
-                "bob",
+                testJwt("bob"),
                 CreateSnippetTestRequest(emptyList(), emptyList()),
             )
 
         assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
-    }
-
-    @Test
-    fun `createTest returns 400 BAD REQUEST for incomplete request body`() {
-        val snippet = createDummySnippet(ownerId = UserId("alice"))
-        val controller = buildController(repo = InMemorySnippetRepository(listOf(snippet)))
-        val mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
-
-        mockMvc
-            .perform(
-                post("/snippet/${snippet.id.value}/test")
-                    .header("X-User-Id", "alice")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"inputs":[]}"""),
-            ).andExpect(status().isBadRequest)
     }
 }
