@@ -7,9 +7,14 @@ import age.of.printscript.demo.snippet.infrastructure.persistence.entity.Snippet
 import age.of.printscript.demo.snippet.infrastructure.persistence.entity.SnippetEntityId
 import age.of.printscript.demo.snippet.infrastructure.persistence.repository.SnippetJpaRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import java.util.Optional
 import java.util.UUID
@@ -133,5 +138,63 @@ class PostgresSnippetRepositoryTest {
         val result = repository.save(snippet)
 
         assertEquals("Saved Snippet", result.title)
+    }
+
+    @Test
+    fun `save marks previous latest version as not latest before saving new version`() {
+        val uuid = UUID.randomUUID()
+        val previousLatest =
+            SnippetEntity(
+                id = uuid,
+                version = 1,
+                ownerId = "alice",
+                title = "Saved Snippet",
+                description = null,
+                language = "PrintScript",
+                languageVersion = "1.1",
+                url = "https://azure.blob/1",
+                isLatest = true,
+            )
+        val newSnippet =
+            Snippet(
+                id = SnippetId(uuid.toString()),
+                version = 2,
+                title = "Saved Snippet",
+                description = null,
+                ownerId = UserId("alice"),
+                language = "PrintScript",
+                languageVersion = "1.1",
+                contentUrl = "https://azure.blob/2",
+                isLatest = true,
+            )
+        val savedV2Entity =
+            SnippetEntity(
+                id = uuid,
+                version = 2,
+                ownerId = "alice",
+                title = "Saved Snippet",
+                description = null,
+                language = "PrintScript",
+                languageVersion = "1.1",
+                url = "https://azure.blob/2",
+                isLatest = true,
+            )
+        `when`(jpaRepository.findByIdAndIsLatestTrue(uuid)).thenReturn(previousLatest)
+        org.mockito.Mockito
+            .doReturn(savedV2Entity)
+            .`when`(jpaRepository)
+            .save(org.mockito.ArgumentMatchers.any())
+
+        val result = repository.save(newSnippet)
+
+        assertEquals(2, result.version)
+        assertTrue(result.isLatest)
+        val captor = ArgumentCaptor.forClass(SnippetEntity::class.java)
+        verify(jpaRepository, times(2)).save(captor.capture())
+        val savedEntities = captor.allValues
+        assertEquals(1, savedEntities[0].version)
+        assertFalse(savedEntities[0].isLatest)
+        assertEquals(2, savedEntities[1].version)
+        assertTrue(savedEntities[1].isLatest)
     }
 }
