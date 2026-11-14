@@ -9,6 +9,7 @@ import age.of.printscript.demo.jobs.application.FakeJobPublisher
 import age.of.printscript.demo.jobs.application.InMemoryJobRepository
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
 import age.of.printscript.demo.snippet.application.createDummySnippet
+import age.of.printscript.demo.snippet.application.testJwt
 import age.of.printscript.demo.snippet.domain.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -65,7 +66,7 @@ class FormatControllerTest {
         val snippetRepo = InMemorySnippetRepository(listOf(snippet))
         val controller = buildController(snippetRepo = snippetRepo)
 
-        val response = controller.format(snippet.id.value, "alice")
+        val response = controller.format(snippet.id.value, testJwt("alice"))
 
         assertEquals(HttpStatus.ACCEPTED, response.statusCode)
         assertNotNull(response.body?.jobId)
@@ -75,7 +76,7 @@ class FormatControllerTest {
     fun `returns 404 NOT FOUND when snippet does not exist`() {
         val controller = buildController()
 
-        val response = controller.format("non-existent", "alice")
+        val response = controller.format("non-existent", testJwt("alice"))
 
         assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
     }
@@ -86,7 +87,7 @@ class FormatControllerTest {
         val snippetRepo = InMemorySnippetRepository(listOf(snippet))
         val controller = buildController(snippetRepo = snippetRepo)
 
-        val response = controller.format(snippet.id.value, "bob")
+        val response = controller.format(snippet.id.value, testJwt("bob"))
 
         assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
     }

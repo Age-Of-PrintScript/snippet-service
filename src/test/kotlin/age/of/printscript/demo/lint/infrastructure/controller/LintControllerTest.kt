@@ -11,6 +11,7 @@ import age.of.printscript.demo.lint.domain.LintRule
 import age.of.printscript.demo.lint.domain.LintRuleId
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
 import age.of.printscript.demo.snippet.application.createDummySnippet
+import age.of.printscript.demo.snippet.application.testJwt
 import age.of.printscript.demo.snippet.domain.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -38,7 +39,7 @@ class LintControllerTest {
         val snippetRepo = InMemorySnippetRepository(listOf(snippet))
         val controller = buildController(snippetRepo = snippetRepo)
 
-        val response = controller.lint(snippet.id.value, "alice")
+        val response = controller.lint(snippet.id.value, testJwt("alice"))
 
         assertEquals(HttpStatus.ACCEPTED, response.statusCode)
         assertNotNull(response.body?.jobId)
@@ -48,7 +49,7 @@ class LintControllerTest {
     fun `returns 404 NOT FOUND when snippet does not exist`() {
         val controller = buildController()
 
-        val response = controller.lint("non-existent", "alice")
+        val response = controller.lint("non-existent", testJwt("alice"))
 
         assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
     }
@@ -59,7 +60,7 @@ class LintControllerTest {
         val snippetRepo = InMemorySnippetRepository(listOf(snippet))
         val controller = buildController(snippetRepo = snippetRepo)
 
-        val response = controller.lint(snippet.id.value, "bob")
+        val response = controller.lint(snippet.id.value, testJwt("bob"))
 
         assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
     }
@@ -78,7 +79,7 @@ class LintControllerTest {
                 LintRuleSelectionRequest(ruleId = 1, value = "snake_case"),
                 LintRuleSelectionRequest(ruleId = 2, value = null),
             )
-        val response = controller.updateRules("alice", UpdateLintRulesRequest(selections))
+        val response = controller.updateRules(testJwt("alice"), UpdateLintRulesRequest(selections))
 
         assertEquals(HttpStatus.OK, response.statusCode)
         val body = response.body as ActiveLintRulesResponse
@@ -97,7 +98,7 @@ class LintControllerTest {
         val controller = buildController(lintRuleRepo = InMemoryLintRuleRepository(rules))
 
         val selections = listOf(LintRuleSelectionRequest(ruleId = 99, value = null))
-        val response = controller.updateRules("alice", UpdateLintRulesRequest(selections))
+        val response = controller.updateRules(testJwt("alice"), UpdateLintRulesRequest(selections))
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals(mapOf("unknownRuleIds" to listOf(99)), response.body)

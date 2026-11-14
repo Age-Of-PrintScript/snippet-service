@@ -10,11 +10,12 @@ import age.of.printscript.demo.snippet.domain.SnippetWithContent
 import age.of.printscript.demo.snippet.domain.UserId
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -85,22 +86,22 @@ class SnippetController(
     @GetMapping("/{id}")
     fun get(
         @PathVariable id: String,
-        @RequestHeader("X-User-Id") userId: String,
+        @AuthenticationPrincipal jwt: Jwt,
         @RequestParam(required = false) version: Int?,
     ): ResponseEntity<SnippetResponse> =
         getSnippet(
             SnippetId(id),
-            UserId(userId),
+            UserId(jwt.subject),
             version,
         ).toResponseEntity()
 
     @PostMapping
     fun create(
-        @RequestHeader("X-User-Id") userId: String,
+        @AuthenticationPrincipal jwt: Jwt,
         @RequestBody request: CreateSnippetRequest,
     ): ResponseEntity<Any> =
         createSnippet(
-            request.toDto(UserId(userId)),
+            request.toDto(UserId(jwt.subject)),
             request.content,
         ).toResponseEntity()
 }
