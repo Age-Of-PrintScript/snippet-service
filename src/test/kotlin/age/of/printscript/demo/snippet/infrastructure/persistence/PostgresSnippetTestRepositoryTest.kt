@@ -1,5 +1,6 @@
 package age.of.printscript.demo.snippet.infrastructure.persistence
 
+import age.of.printscript.demo.snippet.application.SnippetTestPersistenceException
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.SnippetTest
 import age.of.printscript.demo.snippet.domain.SnippetTestId
@@ -10,7 +11,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.mock
+import org.springframework.dao.DataIntegrityViolationException
 import java.time.Instant
 import java.util.UUID
 
@@ -48,5 +51,22 @@ class PostgresSnippetTestRepositoryTest {
         assertEquals(SnippetId(snippetId.toString()), result.snippetId)
         assertEquals(UserId("alice"), result.ownerId)
         assertEquals(createdAt, result.createdAt)
+    }
+
+    @Test
+    fun `save translates database errors to application exception`() {
+        val test =
+            SnippetTest(
+                id = SnippetTestId(UUID.randomUUID().toString()),
+                snippetId = SnippetId(UUID.randomUUID().toString()),
+                ownerId = UserId("alice"),
+                inputs = emptyList(),
+                outputs = emptyList(),
+            )
+        doThrow(DataIntegrityViolationException("Database unavailable")).`when`(jpaRepository).save(any())
+
+        org.junit.jupiter.api.Assertions.assertThrows(SnippetTestPersistenceException::class.java) {
+            repository.save(test, "https://asset/v1/asset/snippet-tests/${test.id.value}")
+        }
     }
 }
