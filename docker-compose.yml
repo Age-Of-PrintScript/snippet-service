@@ -47,6 +47,8 @@ services:
             SPRING_DATASOURCE_PASSWORD: postgres
             ASSET_SERVICE_URL: http://asset-service:8080
             REDIS_HOST: redis
+            AUTH0_DOMAIN: dev-ivkfg3acdd7t54se.us.auth0.com
+            AUTH0_AUDIENCE: https://snippet-api-dev
         depends_on:
             - postgres
             - asset-service
