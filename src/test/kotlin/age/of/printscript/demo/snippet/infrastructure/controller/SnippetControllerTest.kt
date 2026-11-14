@@ -8,6 +8,7 @@ import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
+import age.of.printscript.demo.snippet.application.testJwt
 import age.of.printscript.demo.snippet.domain.Language
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.domain.ValidationError
@@ -37,7 +38,7 @@ class SnippetControllerTest {
         val storage = FakeSnippetStorage().apply { set(snippet.contentUrl, expectedCode) }
         val controller = buildController(repo = repo, storage = storage)
 
-        val response = controller.get(snippet.id.value, "alice", null)
+        val response = controller.get(snippet.id.value, testJwt("alice"), null)
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertEquals(snippet.id.value, response.body?.id)
@@ -49,7 +50,7 @@ class SnippetControllerTest {
     fun `returns 404 NOT FOUND when snippet does not exist`() {
         val controller = buildController()
 
-        val response = controller.get("non-existent", "alice", null)
+        val response = controller.get("non-existent", testJwt("alice"), null)
 
         assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
     }
@@ -60,7 +61,7 @@ class SnippetControllerTest {
         val repo = InMemorySnippetRepository(listOf(snippet))
         val controller = buildController(repo = repo)
 
-        val response = controller.get(snippet.id.value, "bob", null)
+        val response = controller.get(snippet.id.value, testJwt("bob"), null)
 
         assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
     }
@@ -77,7 +78,7 @@ class SnippetControllerTest {
                 content = expectedCode,
             )
 
-        val response = controller.create("alice", request)
+        val response = controller.create(testJwt("alice"), request)
 
         assertEquals(HttpStatus.CREATED, response.statusCode)
         val body = response.body as SnippetResponse
@@ -101,7 +102,7 @@ class SnippetControllerTest {
                 content = "let a: number = 5",
             )
 
-        val response = controller.create("alice", request)
+        val response = controller.create(testJwt("alice"), request)
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals(errors, response.body)
