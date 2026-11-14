@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-class CreateSnippetTest {
+class CreateSnippetUseCaseTest {
     private val code = "let a: number = 5;"
 
     private fun createDto(

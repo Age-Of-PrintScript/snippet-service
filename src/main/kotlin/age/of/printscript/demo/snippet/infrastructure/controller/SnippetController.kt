@@ -3,6 +3,9 @@ package age.of.printscript.demo.snippet.infrastructure.controller
 import age.of.printscript.demo.snippet.application.CreateSnippet
 import age.of.printscript.demo.snippet.application.CreateSnippetDto
 import age.of.printscript.demo.snippet.application.CreateSnippetResult
+import age.of.printscript.demo.snippet.application.CreateSnippetTest
+import age.of.printscript.demo.snippet.application.CreateSnippetTestDto
+import age.of.printscript.demo.snippet.application.CreateSnippetTestResult
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.GetSnippetResult
 import age.of.printscript.demo.snippet.domain.SnippetId
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.Instant
 
 data class CreateSnippetRequest(
     val title: String,
@@ -39,6 +43,17 @@ data class SnippetResponse(
     val content: String,
 )
 
+data class CreateSnippetTestRequest(
+    val inputs: List<String>,
+    val outputs: List<String>,
+)
+
+data class SnippetTestResponse(
+    val id: String,
+    val snippetId: String,
+    val createdAt: Instant,
+)
+
 private fun CreateSnippetRequest.toDto(ownerId: UserId) =
     CreateSnippetDto(
         title = title,
@@ -47,6 +62,16 @@ private fun CreateSnippetRequest.toDto(ownerId: UserId) =
         language = language,
         languageVersion = languageVersion,
     )
+
+private fun CreateSnippetTestRequest.toDto(
+    snippetId: SnippetId,
+    ownerId: UserId,
+) = CreateSnippetTestDto(
+    snippetId = snippetId,
+    ownerId = ownerId,
+    inputs = inputs,
+    outputs = outputs,
+)
 
 private fun SnippetWithContent.toResponse() =
     SnippetResponse(
@@ -77,11 +102,26 @@ private fun CreateSnippetResult.toResponseEntity(): ResponseEntity<Any> =
             ResponseEntity.badRequest().body(mapOf("error" to "Unsupported version: $version"))
     }
 
+private fun CreateSnippetTestResult.toResponseEntity(): ResponseEntity<SnippetTestResponse> =
+    when (this) {
+        is CreateSnippetTestResult.Created ->
+            ResponseEntity.status(HttpStatus.CREATED).body(
+                SnippetTestResponse(
+                    id = test.id.value,
+                    snippetId = test.snippetId.value,
+                    createdAt = test.createdAt,
+                ),
+            )
+        is CreateSnippetTestResult.NotFound -> ResponseEntity.notFound().build()
+        is CreateSnippetTestResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+    }
+
 @RestController
 @RequestMapping("/snippet")
 class SnippetController(
     private val getSnippet: GetSnippet,
     private val createSnippet: CreateSnippet,
+    private val createSnippetTest: CreateSnippetTest,
 ) {
     @GetMapping("/{id}")
     fun get(
@@ -103,5 +143,15 @@ class SnippetController(
         createSnippet(
             request.toDto(UserId(jwt.subject)),
             request.content,
+        ).toResponseEntity()
+
+    @PostMapping("/{id}/test")
+    fun createTest(
+        @PathVariable id: String,
+        @AuthenticationPrincipal jwt: Jwt,
+        @RequestBody request: CreateSnippetTestRequest,
+    ): ResponseEntity<SnippetTestResponse> =
+        createSnippetTest(
+            request.toDto(SnippetId(id), UserId(jwt.subject)),
         ).toResponseEntity()
 }
