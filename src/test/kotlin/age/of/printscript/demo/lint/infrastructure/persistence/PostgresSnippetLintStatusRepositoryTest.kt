@@ -6,12 +6,15 @@ import age.of.printscript.demo.lint.domain.SnippetLintStatus
 import age.of.printscript.demo.lint.infrastructure.persistence.entity.SnippetLintStatusEntity
 import age.of.printscript.demo.lint.infrastructure.persistence.entity.SnippetLintStatusEntityId
 import age.of.printscript.demo.lint.infrastructure.persistence.repository.SnippetLintStatusJpaRepository
+import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.SnippetId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import java.util.Optional
 import java.util.UUID
@@ -73,5 +76,28 @@ class PostgresSnippetLintStatusRepositoryTest {
         val result = repository.save(status)
 
         assertEquals(status, result)
+    }
+
+    @Test
+    fun `markAllPending saves all snippets with PENDING status`() {
+        val uuid1 = UUID.randomUUID()
+        val uuid2 = UUID.randomUUID()
+        val snippet1 = createDummySnippet(id = SnippetId(uuid1.toString()), version = 1)
+        val snippet2 = createDummySnippet(id = SnippetId(uuid2.toString()), version = 2)
+
+        repository.markAllPending(listOf(snippet1, snippet2))
+
+        @Suppress("UNCHECKED_CAST")
+        val captor =
+            ArgumentCaptor.forClass(Iterable::class.java) as ArgumentCaptor<Iterable<SnippetLintStatusEntity>>
+        verify(jpaRepository).saveAll(captor.capture())
+        val savedEntities = captor.value.toList()
+        assertEquals(2, savedEntities.size)
+        assertEquals(uuid1, savedEntities[0].snippetId)
+        assertEquals(1, savedEntities[0].version)
+        assertEquals("PENDING", savedEntities[0].status)
+        assertEquals(uuid2, savedEntities[1].snippetId)
+        assertEquals(2, savedEntities[1].version)
+        assertEquals("PENDING", savedEntities[1].status)
     }
 }

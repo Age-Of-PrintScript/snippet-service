@@ -1,5 +1,6 @@
 package age.of.printscript.demo.lint.domain
 
+import age.of.printscript.demo.snippet.domain.Snippet
 import age.of.printscript.demo.snippet.domain.SnippetId
 
 interface SnippetLintStatusRepository {
@@ -9,4 +10,6 @@ interface SnippetLintStatusRepository {
     ): SnippetLintStatus?
 
     fun save(lintStatus: SnippetLintStatus): SnippetLintStatus
+
+    fun markAllPending(snippets: List<Snippet>)
 }
