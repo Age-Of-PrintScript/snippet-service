@@ -1,11 +1,14 @@
 package age.of.printscript.demo.shared.infrastructure.configuration
 
 import age.of.printscript.demo.snippet.application.CreateSnippet
+import age.of.printscript.demo.snippet.application.CreateSnippetTest
 import age.of.printscript.demo.snippet.application.FakeLanguage
 import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
+import age.of.printscript.demo.snippet.application.FakeSnippetTestStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
+import age.of.printscript.demo.snippet.application.InMemorySnippetTestRepository
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.UserId
@@ -64,6 +67,16 @@ class SecurityConfigurationTest {
             val languages = listOf(FakeLanguage())
             return UpdateSnippet(InMemorySnippetRepository(), FakeSnippetStorage(), languages)
         }
+
+        @Bean
+        fun createSnippetTest(): CreateSnippetTest {
+            val snippet = createDummySnippet(ownerId = UserId("auth0|alice"))
+            return CreateSnippetTest(
+                InMemorySnippetRepository(listOf(snippet)),
+                InMemorySnippetTestRepository(),
+                FakeSnippetTestStorage(),
+            )
+        }
     }
 
     @Autowired
@@ -76,6 +89,7 @@ class SecurityConfigurationTest {
 
     private val createBody =
         """{"title":"t","description":null,"language":"printscript","languageVersion":"1.1","content":"x"}"""
+    private val createTestBody = """{"inputs":["2","3"],"outputs":["5"]}"""
 
     @BeforeEach
     fun setUp() {
@@ -99,6 +113,16 @@ class SecurityConfigurationTest {
                 post("/snippet")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(createBody),
+            ).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `POST snippet test without token returns 401`() {
+        mockMvc
+            .perform(
+                post("/snippet/snippet-1/test")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(createTestBody),
             ).andExpect(status().isUnauthorized)
     }
 
@@ -141,5 +165,28 @@ class SecurityConfigurationTest {
             .perform(get("/snippet/$snippetId").with(jwt().jwt { it.subject("auth0|alice") }))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.ownerId").value("auth0|alice"))
+    }
+
+    @Test
+    fun `POST snippet test uses JWT subject as owner`() {
+        mockMvc
+            .perform(
+                post("/snippet/snippet-1/test")
+                    .with(jwt().jwt { it.subject("auth0|alice") })
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(createTestBody),
+            ).andExpect(status().isCreated)
+            .andExpect(jsonPath("$.snippetId").value("snippet-1"))
+    }
+
+    @Test
+    fun `POST snippet test with incomplete body returns 400`() {
+        mockMvc
+            .perform(
+                post("/snippet/snippet-1/test")
+                    .with(jwt().jwt { it.subject("auth0|alice") })
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"inputs":[]}"""),
+            ).andExpect(status().isBadRequest)
     }
 }
