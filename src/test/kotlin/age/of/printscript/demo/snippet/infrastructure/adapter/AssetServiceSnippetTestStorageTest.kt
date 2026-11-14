@@ -2,6 +2,7 @@ package age.of.printscript.demo.snippet.infrastructure.adapter
 
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.SnippetTest
+import age.of.printscript.demo.snippet.domain.SnippetTestContent
 import age.of.printscript.demo.snippet.domain.SnippetTestId
 import age.of.printscript.demo.snippet.domain.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -45,6 +46,21 @@ class AssetServiceSnippetTestStorageTest {
 
         mockServer.verify()
         assertEquals(expectedUrl, result)
+    }
+
+    @Test
+    fun `read sends GET request and returns test content`() {
+        val url = "$baseUrl/v1/asset/snippet-tests/test-1"
+
+        mockServer
+            .expect(requestTo(url))
+            .andExpect(method(HttpMethod.GET))
+            .andRespond(withSuccess("""{"inputs":["2","3"],"outputs":["5"]}""", MediaType.APPLICATION_JSON))
+
+        val result = storage.read(url)
+
+        mockServer.verify()
+        assertEquals(SnippetTestContent(listOf("2", "3"), listOf("5")), result)
     }
 
     @Test
