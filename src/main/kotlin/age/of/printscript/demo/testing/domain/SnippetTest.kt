@@ -1,5 +1,7 @@
-package age.of.printscript.demo.snippet.domain
+package age.of.printscript.demo.testing.domain
 
+import age.of.printscript.demo.snippet.domain.SnippetId
+import age.of.printscript.demo.snippet.domain.UserId
 import java.time.Instant
 
 @JvmInline
@@ -11,8 +13,7 @@ data class SnippetTest(
     val id: SnippetTestId,
     val snippetId: SnippetId,
     val ownerId: UserId,
-    val inputs: List<String>,
-    val outputs: List<String>,
+    val contentUrl: String,
 )
 
 data class SnippetTestContent(

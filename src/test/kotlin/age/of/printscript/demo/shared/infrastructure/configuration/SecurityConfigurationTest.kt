@@ -1,11 +1,9 @@
 package age.of.printscript.demo.shared.infrastructure.configuration
 
 import age.of.printscript.demo.snippet.application.CreateSnippet
-import age.of.printscript.demo.snippet.application.CreateSnippetTest
 import age.of.printscript.demo.snippet.application.FakeLanguage
 import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
-import age.of.printscript.demo.snippet.application.FakeSnippetTestStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
 import age.of.printscript.demo.snippet.application.InMemorySnippetTestRepository
@@ -13,6 +11,10 @@ import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.infrastructure.controller.SnippetController
+import age.of.printscript.demo.testing.application.CreateSnippetTest
+import age.of.printscript.demo.testing.application.FakeSnippetTestStorage
+import age.of.printscript.demo.testing.application.InMemorySnippetTestRepository
+import age.of.printscript.demo.testing.infrastructure.controller.TestController
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -43,7 +45,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc
 class SecurityConfigurationTest {
     @Configuration
     @EnableWebMvc
-    @Import(SecurityConfiguration::class, SnippetController::class)
+    @Import(SecurityConfiguration::class, SnippetController::class, TestController::class)
     class TestConfig {
         // Reemplaza al decoder real, que necesitaría contactar a Auth0 para obtener el JWKS.
         @Bean

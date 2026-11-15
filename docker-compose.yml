@@ -3,7 +3,7 @@ services:
         image: postgres:17-alpine
         container_name: snippet-postgres
         ports:
-            - "5432:5432"
+            - "5433:5432"
         environment:
             POSTGRES_DB: snippet_db
             POSTGRES_USER: postgres
@@ -69,4 +69,4 @@ volumes:
 
 secrets:
     gradle_properties:
-        file: ~/.gradle/gradle.properties
+        file: ./gradle.properties

@@ -1,10 +1,10 @@
-package age.of.printscript.demo.snippet.infrastructure.persistence.mapper
+package age.of.printscript.demo.testing.infrastructure.persistence.mapper
 
 import age.of.printscript.demo.snippet.domain.SnippetId
-import age.of.printscript.demo.snippet.domain.SnippetTest
-import age.of.printscript.demo.snippet.domain.SnippetTestId
 import age.of.printscript.demo.snippet.domain.UserId
-import age.of.printscript.demo.snippet.infrastructure.persistence.entity.SnippetTestEntity
+import age.of.printscript.demo.testing.domain.SnippetTest
+import age.of.printscript.demo.testing.domain.SnippetTestId
+import age.of.printscript.demo.testing.infrastructure.persistence.entity.SnippetTestEntity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -45,16 +45,12 @@ class SnippetTestMappersTest {
                 ownerId = "auth0|user",
                 url = "https://azure.blob/test-1",
             )
-        val inputs = listOf("1", "2")
-        val outputs = listOf("3")
-
-        val domain = entity.toDomain(inputs, outputs)
+        val domain = entity.toDomain()
 
         assertEquals(SnippetTestId(testId.toString()), domain.id)
         assertEquals(SnippetId(snippetId.toString()), domain.snippetId)
         assertEquals(UserId("auth0|user"), domain.ownerId)
-        assertEquals(inputs, domain.inputs)
-        assertEquals(outputs, domain.outputs)
+        assertEquals("https://azure.blob/test-1", domain.contentUrl)
     }
 
     @Test
@@ -66,11 +62,10 @@ class SnippetTestMappersTest {
                 id = SnippetTestId(testId.toString()),
                 snippetId = SnippetId(snippetId.toString()),
                 ownerId = UserId("auth0|user"),
-                inputs = listOf("10"),
-                outputs = listOf("20"),
+                contentUrl = "https://azure.blob/test-1",
             )
 
-        val entity = test.toEntity(url = "https://azure.blob/test-1")
+        val entity = test.toEntity()
 
         assertEquals(testId, entity.id)
         assertEquals(snippetId, entity.snippetId)

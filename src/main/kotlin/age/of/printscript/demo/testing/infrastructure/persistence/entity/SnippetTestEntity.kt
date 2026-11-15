@@ -1,4 +1,4 @@
-package age.of.printscript.demo.snippet.infrastructure.persistence.entity
+package age.of.printscript.demo.testing.infrastructure.persistence.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

@@ -1,8 +1,8 @@
-package age.of.printscript.demo.snippet.application
+package age.of.printscript.demo.testing.application
 
-import age.of.printscript.demo.snippet.application.port.SnippetTestRepository
-import age.of.printscript.demo.snippet.domain.SnippetTest
-import age.of.printscript.demo.snippet.domain.SnippetTestSummary
+import age.of.printscript.demo.testing.domain.SnippetTest
+import age.of.printscript.demo.testing.domain.SnippetTestRepository
+import age.of.printscript.demo.testing.domain.SnippetTestSummary
 import java.time.Instant
 
 class InMemorySnippetTestRepository(
@@ -10,12 +10,9 @@ class InMemorySnippetTestRepository(
 ) : SnippetTestRepository {
     val savedTests = mutableListOf<Pair<SnippetTest, String>>()
 
-    override fun save(
-        test: SnippetTest,
-        contentUrl: String,
-    ): SnippetTestSummary {
+    override fun save(test: SnippetTest): SnippetTestSummary {
         saveFailure?.let { throw it }
-        savedTests += test to contentUrl
+        savedTests += test to test.contentUrl
         return SnippetTestSummary(
             id = test.id,
             snippetId = test.snippetId,

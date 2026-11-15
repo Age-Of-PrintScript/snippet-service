@@ -1,15 +1,16 @@
-package age.of.printscript.demo.snippet.application
+package age.of.printscript.demo.testing.application
 
 import age.of.printscript.demo.shared.application.UseCase
-import age.of.printscript.demo.snippet.application.port.SnippetTestRepository
-import age.of.printscript.demo.snippet.application.port.SnippetTestStorage
 import age.of.printscript.demo.snippet.domain.Snippet
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.SnippetRepository
-import age.of.printscript.demo.snippet.domain.SnippetTest
-import age.of.printscript.demo.snippet.domain.SnippetTestId
-import age.of.printscript.demo.snippet.domain.SnippetTestSummary
 import age.of.printscript.demo.snippet.domain.UserId
+import age.of.printscript.demo.testing.application.port.SnippetTestStorage
+import age.of.printscript.demo.testing.domain.SnippetTest
+import age.of.printscript.demo.testing.domain.SnippetTestContent
+import age.of.printscript.demo.testing.domain.SnippetTestId
+import age.of.printscript.demo.testing.domain.SnippetTestRepository
+import age.of.printscript.demo.testing.domain.SnippetTestSummary
 import java.util.UUID
 
 class CreateSnippetTest(
@@ -31,18 +32,19 @@ class CreateSnippetTest(
         snippet: Snippet,
         request: CreateSnippetTestDto,
     ): CreateSnippetTestResult {
+        val testId = SnippetTestId(UUID.randomUUID().toString())
+        val content = SnippetTestContent(request.inputs, request.outputs)
+        val contentUrl = snippetTestStorage.save(testId, content)
         val test =
             SnippetTest(
-                id = SnippetTestId(UUID.randomUUID().toString()),
+                id = testId,
                 snippetId = snippet.id,
                 ownerId = request.ownerId,
-                inputs = request.inputs,
-                outputs = request.outputs,
+                contentUrl = contentUrl,
             )
-        val contentUrl = snippetTestStorage.save(test)
 
         return try {
-            CreateSnippetTestResult.Created(snippetTestRepository.save(test, contentUrl))
+            CreateSnippetTestResult.Created(snippetTestRepository.save(test))
         } catch (failure: SnippetTestPersistenceException) {
             snippetTestStorage.delete(contentUrl)
             throw failure

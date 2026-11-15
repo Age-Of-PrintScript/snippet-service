@@ -1,12 +1,12 @@
-package age.of.printscript.demo.snippet.infrastructure.persistence
+package age.of.printscript.demo.testing.infrastructure.persistence
 
-import age.of.printscript.demo.snippet.application.SnippetTestPersistenceException
 import age.of.printscript.demo.snippet.domain.SnippetId
-import age.of.printscript.demo.snippet.domain.SnippetTest
-import age.of.printscript.demo.snippet.domain.SnippetTestId
 import age.of.printscript.demo.snippet.domain.UserId
-import age.of.printscript.demo.snippet.infrastructure.persistence.entity.SnippetTestEntity
-import age.of.printscript.demo.snippet.infrastructure.persistence.repository.SnippetTestJpaRepository
+import age.of.printscript.demo.testing.application.SnippetTestPersistenceException
+import age.of.printscript.demo.testing.domain.SnippetTest
+import age.of.printscript.demo.testing.domain.SnippetTestId
+import age.of.printscript.demo.testing.infrastructure.persistence.entity.SnippetTestEntity
+import age.of.printscript.demo.testing.infrastructure.persistence.repository.SnippetTestJpaRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
@@ -32,8 +32,7 @@ class PostgresSnippetTestRepositoryTest {
                 id = SnippetTestId(testId.toString()),
                 snippetId = SnippetId(snippetId.toString()),
                 ownerId = UserId("alice"),
-                inputs = listOf("2", "3"),
-                outputs = listOf("5"),
+                contentUrl = contentUrl,
             )
         val savedEntity =
             SnippetTestEntity(
@@ -45,7 +44,7 @@ class PostgresSnippetTestRepositoryTest {
             )
         doReturn(savedEntity).`when`(jpaRepository).save(any())
 
-        val result = repository.save(test, contentUrl)
+        val result = repository.save(test)
 
         assertEquals(SnippetTestId(testId.toString()), result.id)
         assertEquals(SnippetId(snippetId.toString()), result.snippetId)
@@ -60,13 +59,12 @@ class PostgresSnippetTestRepositoryTest {
                 id = SnippetTestId(UUID.randomUUID().toString()),
                 snippetId = SnippetId(UUID.randomUUID().toString()),
                 ownerId = UserId("alice"),
-                inputs = emptyList(),
-                outputs = emptyList(),
+                contentUrl = "https://asset/v1/asset/snippet-tests/test-1",
             )
         doThrow(DataIntegrityViolationException("Database unavailable")).`when`(jpaRepository).save(any())
 
         org.junit.jupiter.api.Assertions.assertThrows(SnippetTestPersistenceException::class.java) {
-            repository.save(test, "https://asset/v1/asset/snippet-tests/${test.id.value}")
+            repository.save(test)
         }
     }
 }
