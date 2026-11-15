@@ -1,9 +1,14 @@
 package age.of.printscript.demo.format.infrastructure.controller
 
+import age.of.printscript.demo.format.application.FormatRuleSelection
 import age.of.printscript.demo.format.application.FormatSnippet
 import age.of.printscript.demo.format.application.FormatSnippetResult
 import age.of.printscript.demo.format.application.GetFormatRules
+import age.of.printscript.demo.format.application.UpdateFormatRules
+import age.of.printscript.demo.format.application.UpdateFormatRulesResult
+import age.of.printscript.demo.format.domain.ActiveFormatRule
 import age.of.printscript.demo.format.domain.FormatRule
+import age.of.printscript.demo.format.domain.FormatRuleId
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
 import org.springframework.http.HttpStatus
@@ -13,6 +18,8 @@ import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -37,6 +44,36 @@ data class FormatJobAcceptedResponse(
     val jobId: String,
 )
 
+data class FormatRuleSelectionRequest(
+    val ruleId: Int,
+    val value: Int? = null,
+)
+
+data class UpdateFormatRulesRequest(
+    val rules: List<FormatRuleSelectionRequest>,
+)
+
+data class ActiveFormatRuleResponse(
+    val ruleId: Int,
+    val value: Int?,
+)
+
+data class ActiveFormatRulesResponse(
+    val rules: List<ActiveFormatRuleResponse>,
+)
+
+private fun FormatRuleSelectionRequest.toRuleSelection() =
+    FormatRuleSelection(
+        ruleId = FormatRuleId(ruleId),
+        value = value,
+    )
+
+private fun ActiveFormatRule.toResponse() =
+    ActiveFormatRuleResponse(
+        ruleId = ruleId.value,
+        value = value,
+    )
+
 private fun FormatSnippetResult.toResponseEntity(): ResponseEntity<FormatJobAcceptedResponse> =
     when (this) {
         is FormatSnippetResult.Accepted ->
@@ -45,17 +82,36 @@ private fun FormatSnippetResult.toResponseEntity(): ResponseEntity<FormatJobAcce
         is FormatSnippetResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
     }
 
+private fun UpdateFormatRulesResult.toResponseEntity(): ResponseEntity<Any> =
+    when (this) {
+        is UpdateFormatRulesResult.Success ->
+            ResponseEntity.ok(ActiveFormatRulesResponse(activeRules.map { it.toResponse() }))
+        is UpdateFormatRulesResult.InvalidRules ->
+            ResponseEntity.badRequest().body(mapOf("unknownRuleIds" to unknownRuleIds))
+    }
+
 @RestController
 @RequestMapping("/format")
 class FormatController(
     private val getFormatRules: GetFormatRules,
     private val formatSnippet: FormatSnippet,
+    private val updateFormatRules: UpdateFormatRules,
 ) {
     @GetMapping("/rules")
     fun getRules(): ResponseEntity<FormatRulesResponse> {
         val rules = getFormatRules().map { it.toResponse() }
         return ResponseEntity.ok(FormatRulesResponse(rules))
     }
+
+    @PutMapping("/rules")
+    fun updateRules(
+        @AuthenticationPrincipal jwt: Jwt,
+        @RequestBody request: UpdateFormatRulesRequest,
+    ): ResponseEntity<Any> =
+        updateFormatRules(
+            UserId(jwt.subject),
+            request.rules.map { it.toRuleSelection() },
+        ).toResponseEntity()
 
     @PostMapping("/{id}")
     fun format(
