@@ -5,5 +5,10 @@ interface TestExecutionRepository {
 
     fun findAllByRunId(runId: TestRunId): List<TestExecution>
 
+    fun findLatestCompleted(
+        testId: SnippetTestId,
+        snippetVersion: Int,
+    ): TestExecution?
+
     fun save(testExecution: TestExecution): TestExecution
 }

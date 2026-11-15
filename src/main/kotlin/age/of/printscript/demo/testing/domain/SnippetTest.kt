@@ -26,4 +26,5 @@ data class SnippetTestSummary(
     val snippetId: SnippetId,
     val ownerId: UserId,
     val createdAt: Instant,
+    val contentUrl: String,
 )

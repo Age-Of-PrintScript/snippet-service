@@ -14,6 +14,7 @@ fun SnippetTestEntity.toSummary(): SnippetTestSummary =
         snippetId = SnippetId(snippetId.toString()),
         ownerId = UserId(ownerId),
         createdAt = createdAt,
+        contentUrl = url,
     )
 
 fun SnippetTestEntity.toDomain(): SnippetTest =

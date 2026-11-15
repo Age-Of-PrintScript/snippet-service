@@ -1,5 +1,6 @@
 package age.of.printscript.demo.testing.infrastructure.persistence
 
+import age.of.printscript.demo.testing.domain.SnippetTestId
 import age.of.printscript.demo.testing.domain.TestExecution
 import age.of.printscript.demo.testing.domain.TestExecutionId
 import age.of.printscript.demo.testing.domain.TestExecutionRepository
@@ -24,6 +25,16 @@ class PostgresTestExecutionRepository(
         jpaRepository
             .findAllByRunIdOrderByCreatedAtAsc(UUID.fromString(runId.value))
             .map { it.toDomain() }
+
+    override fun findLatestCompleted(
+        testId: SnippetTestId,
+        snippetVersion: Int,
+    ): TestExecution? =
+        jpaRepository
+            .findLatestCompleted(
+                UUID.fromString(testId.value),
+                snippetVersion,
+            )?.toDomain()
 
     override fun save(testExecution: TestExecution): TestExecution =
         jpaRepository
