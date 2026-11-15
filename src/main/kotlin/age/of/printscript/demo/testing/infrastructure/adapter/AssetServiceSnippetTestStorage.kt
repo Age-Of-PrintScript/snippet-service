@@ -18,6 +18,7 @@ class AssetServiceSnippetTestStorage(
         assetRestClient
             .get()
             .uri(url)
+            .accept(MediaType.APPLICATION_JSON)
             .retrieve()
             .body<SnippetTestContent>() ?: error("Test asset is empty")
 

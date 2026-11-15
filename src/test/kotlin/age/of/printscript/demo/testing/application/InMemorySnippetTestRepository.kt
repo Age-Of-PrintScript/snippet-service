@@ -31,6 +31,29 @@ class InMemorySnippetTestRepository(
         savedTests[index] = test to test.contentUrl
     }
 
+    override fun completeIfActive(
+        jobId: JobId,
+        status: SnippetTestStatus,
+    ) {
+        savedTests.replaceAll { (test, url) ->
+            if (test.activeJobId == jobId && test.status == SnippetTestStatus.PENDING) {
+                test.copy(status = status, activeJobId = null) to url
+            } else {
+                test to url
+            }
+        }
+    }
+
+    override fun invalidateForSnippet(snippetId: SnippetId) {
+        savedTests.replaceAll { (test, url) ->
+            if (test.snippetId == snippetId) {
+                test.copy(status = SnippetTestStatus.NOT_RUN, activeJobId = null) to url
+            } else {
+                test to url
+            }
+        }
+    }
+
     override fun save(test: SnippetTest): SnippetTestSummary {
         saveFailure?.let { throw it }
         savedTests += test to test.contentUrl

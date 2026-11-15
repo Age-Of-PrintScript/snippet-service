@@ -14,4 +14,11 @@ interface SnippetTestRepository {
         id: SnippetTestId,
         jobId: JobId,
     )
+
+    fun completeIfActive(
+        jobId: JobId,
+        status: SnippetTestStatus,
+    )
+
+    fun invalidateForSnippet(snippetId: SnippetId)
 }

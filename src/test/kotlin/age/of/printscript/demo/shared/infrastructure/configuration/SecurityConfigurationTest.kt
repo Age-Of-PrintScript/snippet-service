@@ -21,8 +21,8 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.reset
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.security.oauth2.jwt.BadJwtException
@@ -43,7 +43,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc
 
 @SpringJUnitWebConfig(SecurityConfigurationTest.TestConfig::class)
 class SecurityConfigurationTest {
-    @Configuration
+    @TestConfiguration
     @EnableWebMvc
     @Import(SecurityConfiguration::class, SnippetController::class, TestController::class)
     class TestConfig {

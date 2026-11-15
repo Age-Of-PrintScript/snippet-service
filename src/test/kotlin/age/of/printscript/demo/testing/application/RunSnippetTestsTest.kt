@@ -26,7 +26,7 @@ class RunSnippetTestsTest {
     private val publisher = FakeTestJobPublisher()
     private val reader = UserId("reader")
     private val permissions = FakePermissionGateway(setOf(snippet.id to reader))
-    private val runTests = RunSnippetTests(snippets, tests, permissions, jobs, publisher)
+    private val runTests = RunSnippetTests(snippets, tests, permissions, jobs, publisher, CompleteTestJob(jobs, tests))
 
     @Test
     fun `ALL without ids enqueues one job for each test of the snippet`() {
@@ -142,5 +142,20 @@ class RunSnippetTestsTest {
             SnippetTest(id, snippetId, snippet.ownerId, "https://assets/tests/${id.value}", SnippetTestStatus.PASSED)
         tests.save(test)
         return test
+    }
+
+    @Test
+    fun `publication failure marks only that test as error and continues with the batch`() {
+        val failing = addTest()
+        val next = addTest()
+        publisher.failingUrls += failing.contentUrl
+
+        val result = runTests(snippet.id, snippet.ownerId, TestSelection(TestSelectionType.ALL))
+
+        assertEquals(RunSnippetTestsResult.Accepted(listOf(failing.id, next.id)), result)
+        assertEquals(SnippetTestStatus.ERROR, tests.findById(failing.id)?.status)
+        assertEquals(null, tests.findById(failing.id)?.activeJobId)
+        assertEquals(SnippetTestStatus.PENDING, tests.findById(next.id)?.status)
+        assertEquals(next.contentUrl, publisher.published.single().testUrl)
     }
 }

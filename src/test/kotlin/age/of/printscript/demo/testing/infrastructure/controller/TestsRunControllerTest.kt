@@ -6,6 +6,7 @@ import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.application.testJwt
 import age.of.printscript.demo.snippet.domain.SnippetId
+import age.of.printscript.demo.testing.application.CompleteTestJob
 import age.of.printscript.demo.testing.application.FakeSnippetTestStorage
 import age.of.printscript.demo.testing.application.FakeTestJobPublisher
 import age.of.printscript.demo.testing.application.InMemorySnippetTestRepository
@@ -35,7 +36,8 @@ class TestsRunControllerTest {
     private val tests = InMemorySnippetTestRepository()
     private val publisher = FakeTestJobPublisher()
     private val permissions = FakePermissionGateway()
-    private val runTests = RunSnippetTests(snippets, tests, permissions, InMemoryJobRepository(), publisher)
+    private val jobs = InMemoryJobRepository()
+    private val runTests = RunSnippetTests(snippets, tests, permissions, jobs, publisher, CompleteTestJob(jobs, tests))
     private val mvc =
         MockMvcBuilders
             .standaloneSetup(

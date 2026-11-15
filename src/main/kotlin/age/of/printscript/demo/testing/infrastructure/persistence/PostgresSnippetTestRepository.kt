@@ -6,6 +6,7 @@ import age.of.printscript.demo.testing.application.SnippetTestPersistenceExcepti
 import age.of.printscript.demo.testing.domain.SnippetTest
 import age.of.printscript.demo.testing.domain.SnippetTestId
 import age.of.printscript.demo.testing.domain.SnippetTestRepository
+import age.of.printscript.demo.testing.domain.SnippetTestStatus
 import age.of.printscript.demo.testing.domain.SnippetTestSummary
 import age.of.printscript.demo.testing.infrastructure.persistence.mapper.toDomain
 import age.of.printscript.demo.testing.infrastructure.persistence.mapper.toEntity
@@ -46,4 +47,15 @@ class PostgresSnippetTestRepository(
         } catch (failure: DataAccessException) {
             throw SnippetTestPersistenceException(failure)
         }
+
+    override fun completeIfActive(
+        jobId: JobId,
+        status: SnippetTestStatus,
+    ) {
+        jpaRepository.completeIfActive(UUID.fromString(jobId.value), status.name, Instant.now())
+    }
+
+    override fun invalidateForSnippet(snippetId: SnippetId) {
+        jpaRepository.invalidateForSnippet(UUID.fromString(snippetId.value), Instant.now())
+    }
 }

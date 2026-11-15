@@ -23,4 +23,27 @@ interface SnippetTestJpaRepository : JpaRepository<SnippetTestEntity, UUID> {
         @Param("jobId") jobId: UUID,
         @Param("updatedAt") updatedAt: Instant,
     ): Int
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
+    @Query(
+        "UPDATE SnippetTestEntity t SET t.status = :status, t.activeJobId = NULL, t.updatedAt = :updatedAt " +
+            "WHERE t.activeJobId = :jobId AND t.status = 'PENDING'",
+    )
+    fun completeIfActive(
+        @Param("jobId") jobId: UUID,
+        @Param("status") status: String,
+        @Param("updatedAt") updatedAt: Instant,
+    ): Int
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional
+    @Query(
+        "UPDATE SnippetTestEntity t SET t.status = 'NOT_RUN', t.activeJobId = NULL, t.updatedAt = :updatedAt " +
+            "WHERE t.snippetId = :snippetId",
+    )
+    fun invalidateForSnippet(
+        @Param("snippetId") snippetId: UUID,
+        @Param("updatedAt") updatedAt: Instant,
+    ): Int
 }

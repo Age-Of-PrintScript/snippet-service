@@ -11,9 +11,11 @@ import age.of.printscript.demo.snippet.domain.Snippet
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.SnippetRepository
 import age.of.printscript.demo.snippet.domain.UserId
+import age.of.printscript.demo.testing.application.port.TestJobPublicationException
 import age.of.printscript.demo.testing.application.port.TestJobPublisher
 import age.of.printscript.demo.testing.domain.SnippetTestId
 import age.of.printscript.demo.testing.domain.SnippetTestRepository
+import age.of.printscript.demo.testing.domain.SnippetTestStatus
 import age.of.printscript.demo.testing.domain.SnippetTestSummary
 import java.util.UUID
 
@@ -45,6 +47,7 @@ class RunSnippetTests(
     private val permissions: PermissionGateway,
     private val jobs: JobRepository,
     private val publisher: TestJobPublisher,
+    private val completeTestJob: CompleteTestJob,
 ) : UseCase {
     @Suppress("ReturnCount")
     operator fun invoke(
@@ -91,6 +94,10 @@ class RunSnippetTests(
             ),
         )
         tests.markPending(test.id, jobId)
-        publisher.publishTestJob(jobId.value, snippet, test.contentUrl)
+        try {
+            publisher.publishTestJob(jobId.value, snippet, test.contentUrl)
+        } catch (failure: TestJobPublicationException) {
+            completeTestJob(jobId, SnippetTestStatus.ERROR, failure.message)
+        }
     }
 }
