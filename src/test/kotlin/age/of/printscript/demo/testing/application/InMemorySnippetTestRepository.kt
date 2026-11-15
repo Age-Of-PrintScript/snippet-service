@@ -1,9 +1,11 @@
 package age.of.printscript.demo.testing.application
 
+import age.of.printscript.demo.jobs.domain.JobId
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.testing.domain.SnippetTest
 import age.of.printscript.demo.testing.domain.SnippetTestId
 import age.of.printscript.demo.testing.domain.SnippetTestRepository
+import age.of.printscript.demo.testing.domain.SnippetTestStatus
 import age.of.printscript.demo.testing.domain.SnippetTestSummary
 import java.time.Instant
 
@@ -18,6 +20,16 @@ class InMemorySnippetTestRepository(
         }
 
     override fun findById(id: SnippetTestId): SnippetTest? = savedTests.map { it.first }.find { it.id == id }
+
+    override fun markPending(
+        id: SnippetTestId,
+        jobId: JobId,
+    ) {
+        val index = savedTests.indexOfFirst { it.first.id == id }
+        check(index >= 0) { "Test ${id.value} no longer exists" }
+        val test = savedTests[index].first.copy(status = SnippetTestStatus.PENDING, activeJobId = jobId)
+        savedTests[index] = test to test.contentUrl
+    }
 
     override fun save(test: SnippetTest): SnippetTestSummary {
         saveFailure?.let { throw it }

@@ -2,6 +2,8 @@ package age.of.printscript.demo.testing.infrastructure.controller
 
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
+import age.of.printscript.demo.testing.application.ListSnippetTestStatuses
+import age.of.printscript.demo.testing.application.ListSnippetTestStatusesResult
 import age.of.printscript.demo.testing.application.ListSnippetTests
 import age.of.printscript.demo.testing.application.ListSnippetTestsResult
 import org.springframework.http.HttpStatus
@@ -23,11 +25,29 @@ data class TestListItemResponse(
     val status: String,
 )
 
+data class TestStatusResponse(
+    val id: String,
+    val status: String,
+)
+
 @RestController
 @RequestMapping("/tests")
 class TestsQueryController(
     private val listSnippetTests: ListSnippetTests,
+    private val listSnippetTestStatuses: ListSnippetTestStatuses,
 ) {
+    @GetMapping("/statuses")
+    fun statuses(
+        @RequestParam snippetId: String,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): ResponseEntity<Any> =
+        when (val result = listSnippetTestStatuses(SnippetId(snippetId), UserId(jwt.subject))) {
+            is ListSnippetTestStatusesResult.Success ->
+                ResponseEntity.ok(result.tests.map { TestStatusResponse(it.id.value, it.status.name) })
+            ListSnippetTestStatusesResult.NotFound -> ResponseEntity.notFound().build()
+            ListSnippetTestStatusesResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
+
     @GetMapping
     fun list(
         @RequestParam snippetId: String,
