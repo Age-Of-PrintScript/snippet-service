@@ -27,6 +27,14 @@ class PermissionService(
         return permissions?.any { it.name == readPermission } ?: false
     }
 
+    override fun registerOwner(snippetId: SnippetId) {
+        permissionRestClient
+            .post()
+            .uri("/snippets/{snippetId}/owner", snippetId.value)
+            .retrieve()
+            .toBodilessEntity()
+    }
+
     internal data class PermissionResponse(
         val id: String = "",
         val name: String = "",
