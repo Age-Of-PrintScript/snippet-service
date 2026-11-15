@@ -15,6 +15,11 @@ data class SnippetTest(
     val outputs: List<String>,
 )
 
+data class SnippetTestContent(
+    val inputs: List<String>,
+    val outputs: List<String>,
+)
+
 data class SnippetTestSummary(
     val id: SnippetTestId,
     val snippetId: SnippetId,

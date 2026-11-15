@@ -1,12 +1,17 @@
 package age.of.printscript.demo.snippet.infrastructure.controller
 
 import age.of.printscript.demo.snippet.application.CreateSnippet
+import age.of.printscript.demo.snippet.application.CreateSnippetTest
 import age.of.printscript.demo.snippet.application.FakeLanguage
 import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
+import age.of.printscript.demo.snippet.application.FakeSnippetTestStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
+import age.of.printscript.demo.snippet.application.InMemorySnippetTestRepository
+import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
+import age.of.printscript.demo.snippet.application.testJwt
 import age.of.printscript.demo.snippet.domain.Language
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.domain.ValidationError
@@ -26,7 +31,16 @@ class SnippetControllerTest {
     ) = SnippetController(
         getSnippet = GetSnippet(repo, storage, permissions),
         createSnippet = CreateSnippet(repo, storage, languages),
+        updateSnippet = UpdateSnippet(repo, storage, languages),
+        createSnippetTest = createSnippetTest(repo),
     )
+
+    private fun createSnippetTest(repo: InMemorySnippetRepository) =
+        CreateSnippetTest(
+            repo,
+            InMemorySnippetTestRepository(),
+            FakeSnippetTestStorage(),
+        )
 
     @Test
     fun `returns 200 OK with snippet when found`() {
@@ -35,7 +49,7 @@ class SnippetControllerTest {
         val storage = FakeSnippetStorage().apply { set(snippet.contentUrl, expectedCode) }
         val controller = buildController(repo = repo, storage = storage)
 
-        val response = controller.get(snippet.id.value, "alice", null)
+        val response = controller.get(snippet.id.value, testJwt("alice"), null)
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertEquals(snippet.id.value, response.body?.id)
@@ -47,7 +61,7 @@ class SnippetControllerTest {
     fun `returns 404 NOT FOUND when snippet does not exist`() {
         val controller = buildController()
 
-        val response = controller.get("non-existent", "alice", null)
+        val response = controller.get("non-existent", testJwt("alice"), null)
 
         assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
     }
@@ -58,7 +72,7 @@ class SnippetControllerTest {
         val repo = InMemorySnippetRepository(listOf(snippet))
         val controller = buildController(repo = repo)
 
-        val response = controller.get(snippet.id.value, "bob", null)
+        val response = controller.get(snippet.id.value, testJwt("bob"), null)
 
         assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
     }
@@ -75,7 +89,7 @@ class SnippetControllerTest {
                 content = expectedCode,
             )
 
-        val response = controller.create("alice", request)
+        val response = controller.create(testJwt("alice"), request)
 
         assertEquals(HttpStatus.CREATED, response.statusCode)
         val body = response.body as SnippetResponse
@@ -99,9 +113,127 @@ class SnippetControllerTest {
                 content = "let a: number = 5",
             )
 
-        val response = controller.create("alice", request)
+        val response = controller.create(testJwt("alice"), request)
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals(errors, response.body)
+    }
+
+    @Test
+    fun `createTest returns 201 CREATED with test summary when user owns snippet`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"))
+        val controller = buildController(repo = InMemorySnippetRepository(listOf(snippet)))
+        val request = CreateSnippetTestRequest(inputs = listOf("2", "3"), outputs = listOf("5"))
+
+        val response = controller.createTest(snippet.id.value, testJwt("alice"), request)
+
+        assertEquals(HttpStatus.CREATED, response.statusCode)
+        assertEquals(snippet.id.value, response.body?.snippetId)
+        assertEquals(false, response.body?.id.isNullOrBlank())
+        assertEquals(false, response.body?.createdAt == null)
+    }
+
+    @Test
+    fun `createTest returns 404 NOT FOUND when snippet does not exist`() {
+        val controller = buildController()
+
+        val response =
+            controller.createTest(
+                "unknown",
+                testJwt("alice"),
+                CreateSnippetTestRequest(emptyList(), emptyList()),
+            )
+
+        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
+    }
+
+    @Test
+    fun `createTest returns 403 FORBIDDEN when user does not own snippet`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"))
+        val controller = buildController(repo = InMemorySnippetRepository(listOf(snippet)))
+
+        val response =
+            controller.createTest(
+                snippet.id.value,
+                testJwt("bob"),
+                CreateSnippetTestRequest(emptyList(), emptyList()),
+            )
+
+        assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
+    }
+
+    @Test
+    fun `update returns 200 OK with updated SnippetResponse when snippet is valid`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"), version = 1)
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val controller = buildController(repo = repo)
+        val updatedCode = "let b: number = 10;"
+
+        val response = controller.update(snippet.id.value, testJwt("alice"), UpdateSnippetRequest(updatedCode))
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        val body = response.body as SnippetResponse
+        assertEquals(snippet.id.value, body.id)
+        assertEquals(2, body.version)
+        assertEquals(updatedCode, body.content)
+    }
+
+    @Test
+    fun `update returns 404 NOT FOUND when snippet does not exist`() {
+        val controller = buildController()
+
+        val response = controller.update("non-existent", testJwt("alice"), UpdateSnippetRequest(expectedCode))
+
+        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
+    }
+
+    @Test
+    fun `update returns 403 FORBIDDEN when user is not the owner`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"), version = 1)
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val controller = buildController(repo = repo)
+
+        val response = controller.update(snippet.id.value, testJwt("bob"), UpdateSnippetRequest(expectedCode))
+
+        assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
+    }
+
+    @Test
+    fun `update returns 400 BAD REQUEST with validation errors when code is invalid`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"), version = 1)
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val errors = listOf(ValidationError("Missing semicolon"))
+        val language = FakeLanguage(result = ValidationResult.Failure(errors))
+        val controller = buildController(repo = repo, languages = listOf(language))
+
+        val response = controller.update(snippet.id.value, testJwt("alice"), UpdateSnippetRequest("let a: number = 5"))
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        assertEquals(errors, response.body)
+    }
+
+    @Test
+    fun `update returns 400 BAD REQUEST when language is unsupported`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"), version = 1).copy(language = "python")
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val controller = buildController(repo = repo)
+
+        val response = controller.update(snippet.id.value, testJwt("alice"), UpdateSnippetRequest(expectedCode))
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        assertEquals(mapOf("error" to "Unsupported language: python"), response.body)
+    }
+
+    @Test
+    fun `update returns 400 BAD REQUEST when language version is unsupported`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"), version = 1).copy(languageVersion = "9.9")
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val language = FakeLanguage(result = ValidationResult.UnsupportedVersion)
+        val controller = buildController(repo = repo, languages = listOf(language))
+
+        val response = controller.update(snippet.id.value, testJwt("alice"), UpdateSnippetRequest(expectedCode))
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        assertEquals(mapOf("error" to "Unsupported version: 9.9"), response.body)
     }
 }
