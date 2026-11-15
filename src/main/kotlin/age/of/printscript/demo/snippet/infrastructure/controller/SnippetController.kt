@@ -136,5 +136,4 @@ class SnippetController(
             UserId(jwt.subject),
             request.content,
         ).toResponseEntity()
-
 }

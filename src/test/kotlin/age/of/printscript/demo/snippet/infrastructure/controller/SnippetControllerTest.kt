@@ -6,7 +6,6 @@ import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
-import age.of.printscript.demo.snippet.application.InMemorySnippetTestRepository
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.application.testJwt
@@ -28,9 +27,9 @@ class SnippetControllerTest {
         languages: List<Language> = listOf(FakeLanguage()),
     ) = SnippetController(
         getSnippet = GetSnippet(repo, storage, permissions),
-        createSnippet = CreateSnippet(repo, storage, languages),
+        createSnippet = CreateSnippet(repo, storage, languages, permissions),
         updateSnippet = UpdateSnippet(repo, storage, languages),
-        )
+    )
 
     @Test
     fun `returns 200 OK with snippet when found`() {
@@ -108,6 +107,7 @@ class SnippetControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals(errors, response.body)
     }
+
     @Test
     fun `update returns 200 OK with updated SnippetResponse when snippet is valid`() {
         val snippet = createDummySnippet(ownerId = UserId("alice"), version = 1)
