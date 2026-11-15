@@ -23,6 +23,7 @@ class TestExecutionMappersTest {
                 jobId = JobId(UUID.randomUUID().toString()),
                 testUrl = "https://asset/v1/asset/snippet-tests/test-1",
                 status = TestExecutionStatus.FAILED,
+                isStale = true,
                 createdAt = now,
                 startedAt = now,
                 finishedAt = now,
@@ -31,6 +32,7 @@ class TestExecutionMappersTest {
         val entity = execution.toEntity()
 
         assertEquals(execution.testUrl, entity.testUrl)
+        assertEquals(true, entity.isStale)
         assertEquals(execution, entity.toDomain())
     }
 }

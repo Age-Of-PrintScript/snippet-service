@@ -24,6 +24,7 @@ data class TestExecution(
     val jobId: JobId,
     val testUrl: String,
     val status: TestExecutionStatus,
+    val isStale: Boolean = false,
     val createdAt: Instant = Instant.now(),
     val startedAt: Instant? = null,
     val finishedAt: Instant? = null,

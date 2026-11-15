@@ -22,6 +22,8 @@ class TestExecutionEntity(
     val testUrl: String,
     @Column(nullable = false, length = 30)
     val status: String,
+    @Column(name = "is_stale", nullable = false)
+    val isStale: Boolean = false,
     @Column(name = "created_at", nullable = false)
     val createdAt: Instant = Instant.now(),
     @Column(name = "started_at")
