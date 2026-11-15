@@ -30,7 +30,7 @@ class SnippetControllerTest {
         languages: List<Language> = listOf(FakeLanguage()),
     ) = SnippetController(
         getSnippet = GetSnippet(repo, storage, permissions),
-        createSnippet = CreateSnippet(repo, storage, languages),
+        createSnippet = CreateSnippet(repo, storage, languages, permissions),
         updateSnippet = UpdateSnippet(repo, storage, languages),
         createSnippetTest = createSnippetTest(repo),
     )

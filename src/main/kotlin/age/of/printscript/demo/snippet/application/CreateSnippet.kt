@@ -1,6 +1,7 @@
 package age.of.printscript.demo.snippet.application
 
 import age.of.printscript.demo.shared.application.UseCase
+import age.of.printscript.demo.snippet.application.port.PermissionGateway
 import age.of.printscript.demo.snippet.application.port.SnippetStorage
 import age.of.printscript.demo.snippet.domain.Language
 import age.of.printscript.demo.snippet.domain.Snippet
@@ -17,6 +18,7 @@ class CreateSnippet(
     private val snippetRepository: SnippetRepository,
     private val snippetStorage: SnippetStorage,
     private val languages: List<Language>,
+    private val permissionGateway: PermissionGateway,
 ) : UseCase {
     operator fun invoke(
         createSnippet: CreateSnippetDto,
@@ -41,6 +43,8 @@ class CreateSnippet(
                     CreateSnippetResult.UnsupportedVersion(languageVersion)
                 }
                 is ValidationResult.Success -> {
+                    // Si falla, runCatching borra el contenido y no se guarda el snippet.
+                    permissionGateway.registerOwner(id)
                     val snippet = snippetFromDto(createSnippet, id, contentUrl, version)
                     val saved = snippetRepository.save(snippet)
                     CreateSnippetResult.Created(saved.withContent(content))

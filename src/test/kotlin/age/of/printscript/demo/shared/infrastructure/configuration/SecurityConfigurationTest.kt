@@ -59,7 +59,7 @@ class SecurityConfigurationTest {
         @Bean
         fun createSnippet(): CreateSnippet {
             val languages = listOf(FakeLanguage())
-            return CreateSnippet(InMemorySnippetRepository(), FakeSnippetStorage(), languages)
+            return CreateSnippet(InMemorySnippetRepository(), FakeSnippetStorage(), languages, FakePermissionGateway())
         }
 
         @Bean
