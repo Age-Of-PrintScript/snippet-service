@@ -9,8 +9,7 @@ import age.of.printscript.demo.testing.application.port.SnippetTestStorage
 import age.of.printscript.demo.testing.domain.SnippetTestContent
 import age.of.printscript.demo.testing.domain.SnippetTestId
 import age.of.printscript.demo.testing.domain.SnippetTestRepository
-import age.of.printscript.demo.testing.domain.TestExecution
-import age.of.printscript.demo.testing.domain.TestExecutionRepository
+import age.of.printscript.demo.testing.domain.SnippetTestStatus
 import java.time.Instant
 
 data class VisibleTest(
@@ -18,7 +17,7 @@ data class VisibleTest(
     val snippetId: SnippetId,
     val createdAt: Instant,
     val content: SnippetTestContent,
-    val lastExecution: TestExecution?,
+    val status: SnippetTestStatus,
 )
 
 sealed interface ListSnippetTestsResult {
@@ -35,7 +34,6 @@ class ListSnippetTests(
     private val snippets: SnippetRepository,
     private val tests: SnippetTestRepository,
     private val storage: SnippetTestStorage,
-    private val executions: TestExecutionRepository,
     private val permissions: PermissionGateway,
 ) : UseCase {
     @Suppress("ReturnCount")
@@ -54,7 +52,7 @@ class ListSnippetTests(
                     snippetId = test.snippetId,
                     createdAt = test.createdAt,
                     content = storage.read(test.contentUrl),
-                    lastExecution = executions.findLatestCompleted(test.id, snippet.version),
+                    status = test.status,
                 )
             },
         )
