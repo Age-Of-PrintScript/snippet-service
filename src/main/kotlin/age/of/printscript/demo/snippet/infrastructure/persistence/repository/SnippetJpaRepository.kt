@@ -17,17 +17,14 @@ interface SnippetJpaRepository : JpaRepository<SnippetEntity, SnippetEntityId> {
 
     fun findAllByIdOrderByVersionDesc(id: UUID): List<SnippetEntity>
 
-    @Query(
-        """
-        SELECT s FROM SnippetEntity s
-        WHERE s.id IN :ids
-          AND s.isLatest = true
-          AND (:name IS NULL OR LOWER(s.title) LIKE LOWER(CONCAT('%', :name, '%')))
-        """,
-    )
-    fun findLatestByIds(
-        @Param("ids") ids: Collection<UUID>,
-        @Param("name") name: String?,
+    fun findByIdInAndIsLatestTrue(
+        ids: Collection<UUID>,
+        pageable: Pageable,
+    ): Page<SnippetEntity>
+
+    fun findByIdInAndIsLatestTrueAndTitleContainingIgnoreCase(
+        ids: Collection<UUID>,
+        title: String,
         pageable: Pageable,
     ): Page<SnippetEntity>
 
