@@ -7,6 +7,7 @@ import age.of.printscript.demo.testing.application.RunSnippetTestsResult
 import age.of.printscript.demo.testing.application.TestSelection
 import age.of.printscript.demo.testing.application.TestSelectionType
 import age.of.printscript.demo.testing.domain.SnippetTestId
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -36,16 +37,41 @@ data class RunTestsResponse(
 class TestsRunController(
     private val runTests: RunSnippetTests,
 ) {
+    private val log = LoggerFactory.getLogger(TestsRunController::class.java)
+
     @PostMapping("/run")
     fun run(
         @RequestBody request: RunTestsRequest,
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<RunTestsResponse> =
-        runTests(
-            SnippetId(request.snippetId.toString()),
-            UserId(jwt.subject),
-            TestSelection(request.selection.type, request.selection.testIds.map { SnippetTestId(it.toString()) }),
-        ).toResponseEntity()
+        when (
+            val result =
+                runTests(
+                    SnippetId(request.snippetId.toString()),
+                    UserId(jwt.subject),
+                    TestSelection(
+                        request.selection.type,
+                        request.selection.testIds.map { SnippetTestId(it.toString()) },
+                    ),
+                )
+        ) {
+            is RunSnippetTestsResult.Accepted -> {
+                log.info("Triggered execution of {} tests for snippet id={}", result.testIds.size, request.snippetId)
+                result.toResponseEntity()
+            }
+            RunSnippetTestsResult.NotFound -> {
+                log.warn("Cannot run tests for snippet id={}: not found", request.snippetId)
+                result.toResponseEntity()
+            }
+            RunSnippetTestsResult.Forbidden -> {
+                log.warn("Cannot run tests for snippet id={}: access denied", request.snippetId)
+                result.toResponseEntity()
+            }
+            RunSnippetTestsResult.InvalidSelection -> {
+                log.warn("Cannot run tests for snippet id={}: invalid test selection", request.snippetId)
+                result.toResponseEntity()
+            }
+        }
 }
 
 private fun RunSnippetTestsResult.toResponseEntity(): ResponseEntity<RunTestsResponse> =

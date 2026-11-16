@@ -6,6 +6,7 @@ import age.of.printscript.demo.testing.application.ListSnippetTestStatuses
 import age.of.printscript.demo.testing.application.ListSnippetTestStatusesResult
 import age.of.printscript.demo.testing.application.ListSnippetTests
 import age.of.printscript.demo.testing.application.ListSnippetTestsResult
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -36,16 +37,26 @@ class TestsQueryController(
     private val listSnippetTests: ListSnippetTests,
     private val listSnippetTestStatuses: ListSnippetTestStatuses,
 ) {
+    private val log = LoggerFactory.getLogger(TestsQueryController::class.java)
+
     @GetMapping("/statuses")
     fun statuses(
         @RequestParam snippetId: String,
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<Any> =
         when (val result = listSnippetTestStatuses(SnippetId(snippetId), UserId(jwt.subject))) {
-            is ListSnippetTestStatusesResult.Success ->
+            is ListSnippetTestStatusesResult.Success -> {
+                log.info("Fetched {} test statuses for snippet id={}", result.tests.size, snippetId)
                 ResponseEntity.ok(result.tests.map { TestStatusResponse(it.id.value, it.status.name) })
-            ListSnippetTestStatusesResult.NotFound -> ResponseEntity.notFound().build()
-            ListSnippetTestStatusesResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+            }
+            ListSnippetTestStatusesResult.NotFound -> {
+                log.warn("Cannot fetch test statuses for snippet id={}: not found", snippetId)
+                ResponseEntity.notFound().build()
+            }
+            ListSnippetTestStatusesResult.Forbidden -> {
+                log.warn("Cannot fetch test statuses for snippet id={}: access denied", snippetId)
+                ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+            }
         }
 
     @GetMapping
@@ -54,7 +65,8 @@ class TestsQueryController(
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<Any> =
         when (val result = listSnippetTests(SnippetId(snippetId), UserId(jwt.subject))) {
-            is ListSnippetTestsResult.Success ->
+            is ListSnippetTestsResult.Success -> {
+                log.info("Listed {} tests for snippet id={}", result.tests.size, snippetId)
                 ResponseEntity.ok(
                     result.tests.map { test ->
                         TestListItemResponse(
@@ -67,7 +79,14 @@ class TestsQueryController(
                         )
                     },
                 )
-            ListSnippetTestsResult.NotFound -> ResponseEntity.notFound().build()
-            ListSnippetTestsResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+            }
+            ListSnippetTestsResult.NotFound -> {
+                log.warn("Cannot list tests for snippet id={}: not found", snippetId)
+                ResponseEntity.notFound().build()
+            }
+            ListSnippetTestsResult.Forbidden -> {
+                log.warn("Cannot list tests for snippet id={}: access denied", snippetId)
+                ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+            }
         }
 }

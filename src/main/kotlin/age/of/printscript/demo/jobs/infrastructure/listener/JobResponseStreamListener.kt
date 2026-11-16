@@ -6,6 +6,7 @@ import age.of.printscript.jobs.PAYLOAD_FIELD
 import age.of.printscript.jobs.QueueNames
 import com.newrelic.api.agent.Trace
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 import org.springframework.data.redis.connection.stream.MapRecord
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.data.redis.stream.StreamListener
@@ -32,12 +33,20 @@ class JobResponseStreamListener(
 
         RedisTraceHeaders.accept(response.traceHeaders)
 
-        runCatching {
-            jobResponseHandler.handle(response)
-        }.onSuccess {
-            acknowledge(message)
-        }.onFailure { error ->
-            logger.error("Failed to handle JobResponse for jobId={}", response.jobId, error)
+        MDC.put("correlation-id", response.jobId)
+        MDC.put("service", "snippet-service")
+        try {
+            logger.info("Processing JobResponse for jobId={} type={}", response.jobId, response::class.simpleName)
+            runCatching {
+                jobResponseHandler.handle(response)
+            }.onSuccess {
+                logger.info("Successfully handled JobResponse for jobId={}", response.jobId)
+                acknowledge(message)
+            }.onFailure { error ->
+                logger.error("Failed to handle JobResponse for jobId={}", response.jobId, error)
+            }
+        } finally {
+            MDC.clear()
         }
     }
 
