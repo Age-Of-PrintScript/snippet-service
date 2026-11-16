@@ -1,8 +1,10 @@
 package age.of.printscript.demo.jobs.infrastructure.listener
 
+import age.of.printscript.demo.jobs.infrastructure.RedisTraceHeaders
 import age.of.printscript.jobs.JobSerializer
 import age.of.printscript.jobs.PAYLOAD_FIELD
 import age.of.printscript.jobs.QueueNames
+import com.newrelic.api.agent.Trace
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.connection.stream.MapRecord
 import org.springframework.data.redis.core.StringRedisTemplate
@@ -16,6 +18,7 @@ class JobResponseStreamListener(
 ) : StreamListener<String, MapRecord<String, String, String>> {
     private val logger = LoggerFactory.getLogger(JobResponseStreamListener::class.java)
 
+    @Trace(dispatcher = true)
     override fun onMessage(message: MapRecord<String, String, String>?) {
         val payload = message?.value?.get(PAYLOAD_FIELD) ?: return
         val response =
@@ -26,6 +29,8 @@ class JobResponseStreamListener(
                 acknowledge(message)
                 return
             }
+
+        RedisTraceHeaders.accept(response.traceHeaders)
 
         runCatching {
             jobResponseHandler.handle(response)

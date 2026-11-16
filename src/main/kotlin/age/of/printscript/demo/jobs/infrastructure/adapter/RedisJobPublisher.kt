@@ -1,6 +1,7 @@
 package age.of.printscript.demo.jobs.infrastructure.adapter
 
 import age.of.printscript.demo.format.application.port.FormatJobPublisher
+import age.of.printscript.demo.jobs.infrastructure.RedisTraceHeaders
 import age.of.printscript.demo.lint.application.port.LintJobPublisher
 import age.of.printscript.demo.snippet.domain.Snippet
 import age.of.printscript.demo.testing.application.port.TestJobPublicationException
@@ -34,6 +35,7 @@ class RedisJobPublisher(
                 snippetUrl = snippet.contentUrl,
                 languageVersion = snippet.languageVersion,
                 rules = rules,
+                traceHeaders = RedisTraceHeaders.capture(),
             )
         publish(request)
     }
@@ -50,6 +52,7 @@ class RedisJobPublisher(
                 snippetUrl = snippet.contentUrl,
                 languageVersion = snippet.languageVersion,
                 rules = rules,
+                traceHeaders = RedisTraceHeaders.capture(),
             )
         publish(request)
     }
@@ -66,6 +69,7 @@ class RedisJobPublisher(
                 snippetUrl = snippet.contentUrl,
                 languageVersion = snippet.languageVersion,
                 testUrl = testUrl,
+                traceHeaders = RedisTraceHeaders.capture(),
             )
         try {
             publish(request)
