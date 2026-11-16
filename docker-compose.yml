@@ -49,6 +49,8 @@ services:
             REDIS_HOST: redis
             AUTH0_DOMAIN: dev-ivkfg3acdd7t54se.us.auth0.com
             AUTH0_AUDIENCE: https://snippet-api-dev
+            NEW_RELIC_APP_NAME: "snippet-service"
+            NEW_RELIC_AGENT_ENABLED: "false"
         depends_on:
             - postgres
             - asset-service
