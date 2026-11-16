@@ -11,6 +11,7 @@ import age.of.printscript.demo.format.domain.FormatRule
 import age.of.printscript.demo.format.domain.FormatRuleId
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -97,9 +98,12 @@ class FormatController(
     private val formatSnippet: FormatSnippet,
     private val updateFormatRules: UpdateFormatRules,
 ) {
+    private val log = LoggerFactory.getLogger(FormatController::class.java)
+
     @GetMapping("/rules")
     fun getRules(): ResponseEntity<FormatRulesResponse> {
         val rules = getFormatRules().map { it.toResponse() }
+        log.info("Fetched {} format rules", rules.size)
         return ResponseEntity.ok(FormatRulesResponse(rules))
     }
 
@@ -108,14 +112,34 @@ class FormatController(
         @AuthenticationPrincipal jwt: Jwt,
         @RequestBody request: UpdateFormatRulesRequest,
     ): ResponseEntity<Any> =
-        updateFormatRules(
-            UserId(jwt.subject),
-            request.rules.map { it.toRuleSelection() },
-        ).toResponseEntity()
+        when (val result = updateFormatRules(UserId(jwt.subject), request.rules.map { it.toRuleSelection() })) {
+            is UpdateFormatRulesResult.Success -> {
+                log.info("Updated {} format rules", result.activeRules.size)
+                result.toResponseEntity()
+            }
+            is UpdateFormatRulesResult.InvalidRules -> {
+                log.warn("Failed to update format rules: unknown rule IDs {}", result.unknownRuleIds)
+                result.toResponseEntity()
+            }
+        }
 
     @PostMapping("/{id}")
     fun format(
         @PathVariable id: String,
         @AuthenticationPrincipal jwt: Jwt,
-    ): ResponseEntity<FormatJobAcceptedResponse> = formatSnippet(SnippetId(id), UserId(jwt.subject)).toResponseEntity()
+    ): ResponseEntity<FormatJobAcceptedResponse> =
+        when (val result = formatSnippet(SnippetId(id), UserId(jwt.subject))) {
+            is FormatSnippetResult.Accepted -> {
+                log.info("Format job accepted for snippet id={}, jobId={}", id, result.jobId)
+                result.toResponseEntity()
+            }
+            is FormatSnippetResult.NotFound -> {
+                log.warn("Cannot format snippet id={}: not found", id)
+                result.toResponseEntity()
+            }
+            is FormatSnippetResult.Forbidden -> {
+                log.warn("Cannot format snippet id={}: access denied", id)
+                result.toResponseEntity()
+            }
+        }
 }

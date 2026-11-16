@@ -5,6 +5,7 @@ import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.testing.application.CreateSnippetTest
 import age.of.printscript.demo.testing.application.CreateSnippetTestDto
 import age.of.printscript.demo.testing.application.CreateSnippetTestResult
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -56,13 +57,26 @@ private fun CreateSnippetTestResult.toResponseEntity(): ResponseEntity<SnippetTe
 class TestController(
     private val createSnippetTest: CreateSnippetTest,
 ) {
+    private val log = LoggerFactory.getLogger(TestController::class.java)
+
     @PostMapping("/{id}/test")
     fun createTest(
         @PathVariable id: String,
         @AuthenticationPrincipal jwt: Jwt,
         @RequestBody request: CreateSnippetTestRequest,
     ): ResponseEntity<SnippetTestResponse> =
-        createSnippetTest(
-            request.toDto(SnippetId(id), UserId(jwt.subject)),
-        ).toResponseEntity()
+        when (val result = createSnippetTest(request.toDto(SnippetId(id), UserId(jwt.subject)))) {
+            is CreateSnippetTestResult.Created -> {
+                log.info("Created test id={} for snippet id={}", result.test.id.value, id)
+                result.toResponseEntity()
+            }
+            is CreateSnippetTestResult.NotFound -> {
+                log.warn("Cannot create test for snippet id={}: not found", id)
+                result.toResponseEntity()
+            }
+            is CreateSnippetTestResult.Forbidden -> {
+                log.warn("Cannot create test for snippet id={}: access denied", id)
+                result.toResponseEntity()
+            }
+        }
 }
