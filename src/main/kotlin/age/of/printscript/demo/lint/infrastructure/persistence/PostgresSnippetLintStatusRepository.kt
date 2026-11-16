@@ -29,6 +29,15 @@ class PostgresSnippetLintStatusRepository(
             ?.toDomain()
     }
 
+    override fun findStatuses(snippets: List<Snippet>): Map<SnippetId, LintStatus> {
+        if (snippets.isEmpty()) return emptyMap()
+        val ids = snippets.map { SnippetLintStatusEntityId(UUID.fromString(it.id.value), it.version) }
+        return jpaRepository
+            .findAllById(ids)
+            .map { it.toDomain() }
+            .associate { it.snippetId to it.status }
+    }
+
     override fun save(lintStatus: SnippetLintStatus): SnippetLintStatus {
         val entity = lintStatus.toEntity()
         return jpaRepository.save(entity).toDomain()

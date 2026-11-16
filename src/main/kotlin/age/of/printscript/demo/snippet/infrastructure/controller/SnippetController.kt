@@ -5,6 +5,9 @@ import age.of.printscript.demo.snippet.application.CreateSnippetDto
 import age.of.printscript.demo.snippet.application.CreateSnippetResult
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.GetSnippetResult
+import age.of.printscript.demo.snippet.application.ListSnippets
+import age.of.printscript.demo.snippet.application.ListSnippetsResult
+import age.of.printscript.demo.snippet.application.SnippetSummary
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.UpdateSnippetResult
 import age.of.printscript.demo.snippet.domain.SnippetId
@@ -35,6 +38,23 @@ data class UpdateSnippetRequest(
     val content: String,
 )
 
+data class SnippetSummaryResponse(
+    val snippetId: String,
+    val title: String,
+    val compliance: String,
+    val author: String,
+    val language: String,
+    val languageVersion: String,
+    val role: String,
+)
+
+data class PaginatedSnippetsResponse(
+    val page: Int,
+    val pageSize: Int,
+    val total: Long,
+    val snippets: List<SnippetSummaryResponse>,
+)
+
 data class SnippetResponse(
     val id: String,
     val version: Int,
@@ -53,6 +73,25 @@ private fun CreateSnippetRequest.toDto(ownerId: UserId) =
         ownerId = ownerId,
         language = language,
         languageVersion = languageVersion,
+    )
+
+private fun SnippetSummary.toResponse() =
+    SnippetSummaryResponse(
+        snippetId = snippetId.value,
+        title = title,
+        compliance = compliance.name,
+        author = author.value,
+        language = language,
+        languageVersion = languageVersion,
+        role = role,
+    )
+
+private fun ListSnippetsResult.toResponse() =
+    PaginatedSnippetsResponse(
+        page = page,
+        pageSize = pageSize,
+        total = total,
+        snippets = snippets.map { it.toResponse() },
     )
 
 private fun SnippetWithContent.toResponse() =
@@ -100,9 +139,20 @@ private fun UpdateSnippetResult.toResponseEntity(): ResponseEntity<Any> =
 @RequestMapping("/snippet")
 class SnippetController(
     private val getSnippet: GetSnippet,
+    private val listSnippets: ListSnippets,
     private val createSnippet: CreateSnippet,
     private val updateSnippet: UpdateSnippet,
 ) {
+    @GetMapping
+    fun list(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "10") pageSize: Int,
+        @RequestParam(required = false) name: String?,
+    ): ResponseEntity<PaginatedSnippetsResponse> =
+        ResponseEntity.ok(
+            listSnippets(page = page, pageSize = pageSize, name = name).toResponse(),
+        )
+
     @GetMapping("/{id}")
     fun get(
         @PathVariable id: String,

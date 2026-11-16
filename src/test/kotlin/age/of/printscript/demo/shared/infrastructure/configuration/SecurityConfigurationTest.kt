@@ -1,11 +1,13 @@
 package age.of.printscript.demo.shared.infrastructure.configuration
 
+import age.of.printscript.demo.lint.application.InMemorySnippetLintStatusRepository
 import age.of.printscript.demo.snippet.application.CreateSnippet
 import age.of.printscript.demo.snippet.application.FakeLanguage
 import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
+import age.of.printscript.demo.snippet.application.ListSnippets
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.UserId
@@ -58,6 +60,14 @@ class SecurityConfigurationTest {
         }
 
         @Bean
+        fun listSnippets(): ListSnippets =
+            ListSnippets(
+                FakePermissionGateway(),
+                InMemorySnippetRepository(),
+                InMemorySnippetLintStatusRepository(),
+            )
+
+        @Bean
         fun createSnippet(): CreateSnippet {
             val languages = listOf(FakeLanguage())
             return CreateSnippet(InMemorySnippetRepository(), FakeSnippetStorage(), languages, FakePermissionGateway())
@@ -100,6 +110,16 @@ class SecurityConfigurationTest {
                 .webAppContextSetup(context)
                 .apply<DefaultMockMvcBuilder>(springSecurity())
                 .build()
+    }
+
+    @Test
+    fun `GET snippet list without token returns 401`() {
+        mockMvc.perform(get("/snippet")).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `GET snippet list with valid jwt returns 200`() {
+        mockMvc.perform(get("/snippet").with(jwt())).andExpect(status().isOk)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package age.of.printscript.demo.snippet.infrastructure.adapter
 
+import age.of.printscript.demo.snippet.application.port.AccessibleSnippet
 import age.of.printscript.demo.snippet.application.port.PermissionGateway
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
@@ -35,8 +36,25 @@ class PermissionService(
             .toBodilessEntity()
     }
 
+    override fun listAccessibleSnippets(): List<AccessibleSnippet> {
+        val items =
+            permissionRestClient
+                .get()
+                .uri("/snippets")
+                .retrieve()
+                .body<List<AccessibleSnippetResponse>>()
+                .orEmpty()
+
+        return items.map { AccessibleSnippet(SnippetId(it.snippetId), it.role) }
+    }
+
     internal data class PermissionResponse(
         val id: String = "",
         val name: String = "",
+    )
+
+    internal data class AccessibleSnippetResponse(
+        val snippetId: String = "",
+        val role: String = "",
     )
 }
