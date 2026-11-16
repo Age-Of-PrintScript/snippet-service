@@ -2,6 +2,7 @@ package age.of.printscript.demo.snippet.infrastructure.persistence
 
 import age.of.printscript.demo.snippet.domain.Snippet
 import age.of.printscript.demo.snippet.domain.SnippetId
+import age.of.printscript.demo.snippet.domain.SnippetPage
 import age.of.printscript.demo.snippet.domain.SnippetRepository
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.infrastructure.persistence.entity.SnippetEntity
@@ -10,6 +11,8 @@ import age.of.printscript.demo.snippet.infrastructure.persistence.mapper.toDomai
 import age.of.printscript.demo.snippet.infrastructure.persistence.mapper.toEntity
 import age.of.printscript.demo.snippet.infrastructure.persistence.repository.SnippetJpaRepository
 import age.of.printscript.demo.testing.domain.SnippetTestRepository
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -42,6 +45,27 @@ class PostgresSnippetRepository(
         jpaRepository
             .findAllByOwnerIdAndIsLatestTrue(ownerId.value)
             .map { it.toDomain() }
+
+    override fun findLatestByIds(
+        ids: List<SnippetId>,
+        name: String?,
+        page: Int,
+        pageSize: Int,
+    ): SnippetPage {
+        val uuids = ids.mapNotNull { runCatching { UUID.fromString(it.value) }.getOrNull() }
+        // Evita ejecutar IN () en PostgreSQL si permissions devolvió vacío o sin UUIDs válidos.
+        if (uuids.isEmpty()) return SnippetPage(emptyList(), 0)
+
+        val normalizedName = name?.trim()?.takeIf { it.isNotEmpty() }
+        val pageable =
+            PageRequest.of(
+                page.coerceAtLeast(0),
+                pageSize.coerceAtLeast(1),
+                Sort.by(Sort.Direction.DESC, "updatedAt"),
+            )
+        val result = jpaRepository.findLatestByIds(uuids, normalizedName, pageable)
+        return SnippetPage(result.content.map { it.toDomain() }, result.totalElements)
+    }
 
     @Transactional
     override fun save(snippet: Snippet): Snippet {
