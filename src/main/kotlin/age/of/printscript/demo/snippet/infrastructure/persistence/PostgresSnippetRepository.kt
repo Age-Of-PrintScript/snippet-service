@@ -63,7 +63,12 @@ class PostgresSnippetRepository(
                 pageSize.coerceAtLeast(1),
                 Sort.by(Sort.Direction.DESC, "updatedAt"),
             )
-        val result = jpaRepository.findLatestByIds(uuids, normalizedName, pageable)
+        val result =
+            if (normalizedName == null) {
+                jpaRepository.findByIdInAndIsLatestTrue(uuids, pageable)
+            } else {
+                jpaRepository.findByIdInAndIsLatestTrueAndTitleContainingIgnoreCase(uuids, normalizedName, pageable)
+            }
         return SnippetPage(result.content.map { it.toDomain() }, result.totalElements)
     }
 
