@@ -55,9 +55,14 @@ class PostgresSnippetRepository(
         }
         val entity = snippet.toEntity()
         val previous = jpaRepository.findByIdAndIsLatestTrue(entity.id)
+
+        // Detecta si cambió el contenido real (código, versión del lenguaje, versión del snippet)
         val contentChanged = previous?.hasDifferentContent(snippet) == true
         if (snippet.isLatest) jpaRepository.clearPreviousLatest(entity.id, entity.version)
         val saved = jpaRepository.save(entity).toDomain()
+
+        // Si el código del snippet cambió en la versión activa, se invalidan los resultados
+        // previos de sus tests (vuelven a NOT_RUN) para evitar falsos verdes con código nuevo.
         if (snippet.isLatest && contentChanged) {
             tests.invalidateForSnippet(snippet.id)
         }
