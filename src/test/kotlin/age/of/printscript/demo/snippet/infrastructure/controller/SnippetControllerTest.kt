@@ -1,11 +1,13 @@
 package age.of.printscript.demo.snippet.infrastructure.controller
 
+import age.of.printscript.demo.lint.application.InMemorySnippetLintStatusRepository
 import age.of.printscript.demo.snippet.application.CreateSnippet
 import age.of.printscript.demo.snippet.application.FakeLanguage
 import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
+import age.of.printscript.demo.snippet.application.ListSnippets
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.application.testJwt
@@ -27,6 +29,7 @@ class SnippetControllerTest {
         languages: List<Language> = listOf(FakeLanguage()),
     ) = SnippetController(
         getSnippet = GetSnippet(repo, storage, permissions),
+        listSnippets = ListSnippets(permissions, repo, InMemorySnippetLintStatusRepository()),
         createSnippet = CreateSnippet(repo, storage, languages, permissions),
         updateSnippet = UpdateSnippet(repo, storage, languages),
     )

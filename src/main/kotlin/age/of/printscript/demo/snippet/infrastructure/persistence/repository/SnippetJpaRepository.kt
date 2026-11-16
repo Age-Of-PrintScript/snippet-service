@@ -2,6 +2,8 @@ package age.of.printscript.demo.snippet.infrastructure.persistence.repository
 
 import age.of.printscript.demo.snippet.infrastructure.persistence.entity.SnippetEntity
 import age.of.printscript.demo.snippet.infrastructure.persistence.entity.SnippetEntityId
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -14,6 +16,17 @@ interface SnippetJpaRepository : JpaRepository<SnippetEntity, SnippetEntityId> {
     fun findAllByOwnerIdAndIsLatestTrue(ownerId: String): List<SnippetEntity>
 
     fun findAllByIdOrderByVersionDesc(id: UUID): List<SnippetEntity>
+
+    fun findByIdInAndIsLatestTrue(
+        ids: Collection<UUID>,
+        pageable: Pageable,
+    ): Page<SnippetEntity>
+
+    fun findByIdInAndIsLatestTrueAndTitleContainingIgnoreCase(
+        ids: Collection<UUID>,
+        title: String,
+        pageable: Pageable,
+    ): Page<SnippetEntity>
 
     @Modifying
     @Query(
