@@ -1,7 +1,10 @@
-package age.of.printscript.demo.snippet.application
+package age.of.printscript.demo.testing.application
 
+import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
+import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
+import age.of.printscript.demo.testing.domain.SnippetTestContent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -31,10 +34,12 @@ class CreateSnippetTestUseCaseTest {
 
         assertTrue(result is CreateSnippetTestResult.Created)
         val persistedTest = testRepository.savedTests.single().first
-        assertEquals(listOf("2", "3"), persistedTest.inputs)
-        assertEquals(listOf("5"), persistedTest.outputs)
         assertEquals(snippet.id, persistedTest.snippetId)
         assertEquals(UserId("alice"), persistedTest.ownerId)
+        assertEquals(
+            SnippetTestContent(listOf("2", "3"), listOf("5")),
+            storage.read(persistedTest.contentUrl),
+        )
     }
 
     @Test
@@ -49,9 +54,12 @@ class CreateSnippetTestUseCaseTest {
         assertTrue(result is CreateSnippetTestResult.Created)
         assertEquals(
             listOf("999"),
-            testRepository.savedTests
-                .single()
-                .first.outputs,
+            storage
+                .read(
+                    testRepository.savedTests
+                        .single()
+                        .first.contentUrl,
+                ).outputs,
         )
     }
 

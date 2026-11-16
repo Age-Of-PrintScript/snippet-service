@@ -1,8 +1,8 @@
-package age.of.printscript.demo.snippet.infrastructure.adapter
+package age.of.printscript.demo.testing.infrastructure.adapter
 
-import age.of.printscript.demo.snippet.application.port.SnippetTestStorage
-import age.of.printscript.demo.snippet.domain.SnippetTest
-import age.of.printscript.demo.snippet.domain.SnippetTestContent
+import age.of.printscript.demo.testing.application.port.SnippetTestStorage
+import age.of.printscript.demo.testing.domain.SnippetTestContent
+import age.of.printscript.demo.testing.domain.SnippetTestId
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
@@ -18,16 +18,20 @@ class AssetServiceSnippetTestStorage(
         assetRestClient
             .get()
             .uri(url)
+            .accept(MediaType.APPLICATION_JSON)
             .retrieve()
             .body<SnippetTestContent>() ?: error("Test asset is empty")
 
-    override fun save(test: SnippetTest): String {
-        val key = test.id.value
+    override fun save(
+        id: SnippetTestId,
+        content: SnippetTestContent,
+    ): String {
+        val key = id.value
         assetRestClient
             .put()
             .uri("/v1/asset/{container}/{key}", CONTAINER, key)
             .contentType(MediaType.APPLICATION_JSON)
-            .body(SnippetTestContent(test.inputs, test.outputs))
+            .body(content)
             .retrieve()
             .toBodilessEntity()
 

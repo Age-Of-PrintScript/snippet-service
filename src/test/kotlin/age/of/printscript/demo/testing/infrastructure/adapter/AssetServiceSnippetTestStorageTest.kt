@@ -1,10 +1,7 @@
-package age.of.printscript.demo.snippet.infrastructure.adapter
+package age.of.printscript.demo.testing.infrastructure.adapter
 
-import age.of.printscript.demo.snippet.domain.SnippetId
-import age.of.printscript.demo.snippet.domain.SnippetTest
-import age.of.printscript.demo.snippet.domain.SnippetTestContent
-import age.of.printscript.demo.snippet.domain.SnippetTestId
-import age.of.printscript.demo.snippet.domain.UserId
+import age.of.printscript.demo.testing.domain.SnippetTestContent
+import age.of.printscript.demo.testing.domain.SnippetTestId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -32,8 +29,9 @@ class AssetServiceSnippetTestStorageTest {
 
     @Test
     fun `save sends ordered inputs and outputs as JSON and returns asset url`() {
-        val test = createTest()
-        val expectedUrl = "$baseUrl/v1/asset/snippet-tests/${test.id.value}"
+        val id = SnippetTestId("test-1")
+        val content = SnippetTestContent(listOf("2", "3"), listOf("5"))
+        val expectedUrl = "$baseUrl/v1/asset/snippet-tests/${id.value}"
 
         mockServer
             .expect(requestTo(expectedUrl))
@@ -42,7 +40,7 @@ class AssetServiceSnippetTestStorageTest {
             .andExpect(content().json("""{"inputs":["2","3"],"outputs":["5"]}"""))
             .andRespond(withSuccess())
 
-        val result = storage.save(test)
+        val result = storage.save(id, content)
 
         mockServer.verify()
         assertEquals(expectedUrl, result)
@@ -76,13 +74,4 @@ class AssetServiceSnippetTestStorageTest {
 
         mockServer.verify()
     }
-
-    private fun createTest() =
-        SnippetTest(
-            id = SnippetTestId("test-1"),
-            snippetId = SnippetId("snippet-1"),
-            ownerId = UserId("alice"),
-            inputs = listOf("2", "3"),
-            outputs = listOf("5"),
-        )
 }

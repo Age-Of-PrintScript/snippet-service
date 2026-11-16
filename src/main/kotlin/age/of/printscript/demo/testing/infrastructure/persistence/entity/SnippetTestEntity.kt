@@ -1,4 +1,4 @@
-package age.of.printscript.demo.snippet.infrastructure.persistence.entity
+package age.of.printscript.demo.testing.infrastructure.persistence.entity
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -22,4 +22,8 @@ class SnippetTestEntity(
     val createdAt: Instant = Instant.now(),
     @Column(name = "updated_at", nullable = false)
     val updatedAt: Instant = Instant.now(),
+    @Column(nullable = false, length = 30)
+    val status: String = "NOT_RUN",
+    @Column(name = "active_job_id")
+    val activeJobId: UUID? = null,
 )
