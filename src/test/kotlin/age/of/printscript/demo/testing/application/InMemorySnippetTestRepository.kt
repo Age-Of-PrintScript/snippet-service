@@ -75,4 +75,8 @@ class InMemorySnippetTestRepository(
             status = test.status,
         )
     }
+
+    override fun deleteAllBySnippetId(snippetId: SnippetId) {
+        savedTests.removeIf { it.first.snippetId == snippetId }
+    }
 }

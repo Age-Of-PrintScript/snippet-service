@@ -1,5 +1,6 @@
 package age.of.printscript.demo.snippet.application
 
+import age.of.printscript.demo.lint.application.LintSnippet
 import age.of.printscript.demo.shared.application.UseCase
 import age.of.printscript.demo.snippet.application.port.SnippetStorage
 import age.of.printscript.demo.snippet.domain.Language
@@ -11,12 +12,16 @@ import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.domain.ValidationError
 import age.of.printscript.demo.snippet.domain.ValidationResult
 import age.of.printscript.demo.snippet.domain.withContent
+import org.slf4j.LoggerFactory
 
 class UpdateSnippet(
     private val snippetRepository: SnippetRepository,
     private val snippetStorage: SnippetStorage,
     private val languages: List<Language>,
+    private val lintSnippet: LintSnippet? = null,
 ) : UseCase {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     operator fun invoke(
         id: SnippetId,
         userId: UserId,
@@ -60,6 +65,8 @@ class UpdateSnippet(
                     isLatest = true,
                 )
             val saved = snippetRepository.save(updated)
+            runCatching { lintSnippet?.invoke(saved.id, saved.ownerId) }
+                .onFailure { logger.warn("Failed to enqueue lint job for snippet {}", saved.id.value, it) }
             UpdateSnippetResult.Updated(saved.withContent(content))
         }.onFailure {
             snippetStorage.delete(contentUrl)

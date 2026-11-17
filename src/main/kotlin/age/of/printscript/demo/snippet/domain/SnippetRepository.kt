@@ -22,5 +22,9 @@ interface SnippetRepository {
         pageSize: Int,
     ): SnippetPage
 
+    fun findAllVersions(id: SnippetId): List<Snippet>
+
+    fun deleteById(id: SnippetId)
+
     fun save(snippet: Snippet): Snippet
 }

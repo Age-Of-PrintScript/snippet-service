@@ -2,6 +2,7 @@ package age.of.printscript.demo.snippet.infrastructure.controller
 
 import age.of.printscript.demo.lint.application.InMemorySnippetLintStatusRepository
 import age.of.printscript.demo.snippet.application.CreateSnippet
+import age.of.printscript.demo.snippet.application.DeleteSnippet
 import age.of.printscript.demo.snippet.application.FakeLanguage
 import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
@@ -32,7 +33,39 @@ class SnippetControllerTest {
         listSnippets = ListSnippets(permissions, repo, InMemorySnippetLintStatusRepository()),
         createSnippet = CreateSnippet(repo, storage, languages, permissions),
         updateSnippet = UpdateSnippet(repo, storage, languages),
+        deleteSnippet = DeleteSnippet(repo, storage),
     )
+
+    @Test
+    fun `delete returns 204 NO CONTENT when owner deletes snippet`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"))
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val storage = FakeSnippetStorage().apply { set(snippet.contentUrl, expectedCode) }
+        val controller = buildController(repo = repo, storage = storage)
+
+        val response = controller.delete(snippet.id.value, testJwt("alice"))
+
+        assertEquals(HttpStatus.NO_CONTENT, response.statusCode)
+    }
+
+    @Test
+    fun `delete returns 403 FORBIDDEN when user is not owner`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"))
+        val controller = buildController(repo = InMemorySnippetRepository(listOf(snippet)))
+
+        val response = controller.delete(snippet.id.value, testJwt("bob"))
+
+        assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
+    }
+
+    @Test
+    fun `delete returns 404 NOT FOUND when snippet does not exist`() {
+        val controller = buildController()
+
+        val response = controller.delete("missing", testJwt("alice"))
+
+        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
+    }
 
     @Test
     fun `returns 200 OK with snippet when found`() {

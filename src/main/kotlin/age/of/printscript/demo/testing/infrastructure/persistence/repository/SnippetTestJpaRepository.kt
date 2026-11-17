@@ -46,4 +46,11 @@ interface SnippetTestJpaRepository : JpaRepository<SnippetTestEntity, UUID> {
         @Param("snippetId") snippetId: UUID,
         @Param("updatedAt") updatedAt: Instant,
     ): Int
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM SnippetTestEntity t WHERE t.snippetId = :snippetId")
+    fun deleteAllBySnippetId(
+        @Param("snippetId") snippetId: UUID,
+    ): Int
 }

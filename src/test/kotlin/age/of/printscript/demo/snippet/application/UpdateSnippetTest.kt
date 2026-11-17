@@ -1,5 +1,11 @@
 package age.of.printscript.demo.snippet.application
 
+import age.of.printscript.demo.jobs.application.FakeJobPublisher
+import age.of.printscript.demo.jobs.application.InMemoryJobRepository
+import age.of.printscript.demo.lint.application.InMemoryLintRuleRepository
+import age.of.printscript.demo.lint.application.InMemorySnippetLintStatusRepository
+import age.of.printscript.demo.lint.application.LintSnippet
+import age.of.printscript.demo.lint.domain.LintStatus
 import age.of.printscript.demo.snippet.domain.Snippet
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.SnippetPage
@@ -144,6 +150,10 @@ class UpdateSnippetTest {
                     pageSize: Int,
                 ): SnippetPage = SnippetPage(emptyList(), 0)
 
+                override fun findAllVersions(id: SnippetId): List<Snippet> = emptyList()
+
+                override fun deleteById(id: SnippetId) = Unit
+
                 override fun save(snippet: Snippet): Snippet = error("Database unavailable")
             }
         val storage = FakeSnippetStorage()
@@ -155,5 +165,33 @@ class UpdateSnippetTest {
         }
 
         assertTrue(storage.isEmpty())
+    }
+
+    @Test
+    fun `enqueues lint job for new version after updating snippet`() {
+        val existing = createDummySnippet(ownerId = UserId("alice"), version = 1)
+        val repo = InMemorySnippetRepository(listOf(existing))
+        val storage = FakeSnippetStorage()
+        val publisher = FakeJobPublisher()
+        val lintStatusRepo = InMemorySnippetLintStatusRepository()
+        val lintSnippet =
+            LintSnippet(
+                jobPublisher = publisher,
+                snippetRepository = repo,
+                lintRuleRepository = InMemoryLintRuleRepository(),
+                snippetLintStatusRepository = lintStatusRepo,
+                jobRepository = InMemoryJobRepository(),
+            )
+        val language = FakeLanguage(name = "printscript", result = ValidationResult.Success)
+        val updateSnippet = UpdateSnippet(repo, storage, listOf(language), lintSnippet)
+
+        val result = updateSnippet(existing.id, UserId("alice"), updatedCode)
+
+        val updated = (result as UpdateSnippetResult.Updated).snippet
+        assertEquals(2, updated.version)
+        assertEquals(1, publisher.publishedLintJobs.size)
+        val job = publisher.publishedLintJobs.first()
+        assertEquals(2, job.snippet.version)
+        assertEquals(LintStatus.PENDING, lintStatusRepo.findByVersion(existing.id, 2)?.status)
     }
 }

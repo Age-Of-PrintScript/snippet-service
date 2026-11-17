@@ -2,6 +2,7 @@ package age.of.printscript.demo.shared.infrastructure.configuration
 
 import age.of.printscript.demo.lint.application.InMemorySnippetLintStatusRepository
 import age.of.printscript.demo.snippet.application.CreateSnippet
+import age.of.printscript.demo.snippet.application.DeleteSnippet
 import age.of.printscript.demo.snippet.application.FakeLanguage
 import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
@@ -82,6 +83,9 @@ class SecurityConfigurationTest {
         }
 
         @Bean
+        fun deleteSnippet(): DeleteSnippet = DeleteSnippet(InMemorySnippetRepository(), FakeSnippetStorage())
+
+        @Bean
         fun createSnippetTest(): CreateSnippetTest {
             val snippet = createDummySnippet(ownerId = UserId("auth0|alice"))
             return CreateSnippetTest(
@@ -132,6 +136,11 @@ class SecurityConfigurationTest {
     @Test
     fun `GET snippet list with valid jwt returns 200`() {
         mockMvc.perform(get("/snippet").with(jwt())).andExpect(status().isOk)
+    }
+
+    @Test
+    fun `DELETE snippet without token returns 401`() {
+        mockMvc.perform(delete("/snippet/any")).andExpect(status().isUnauthorized)
     }
 
     @Test
