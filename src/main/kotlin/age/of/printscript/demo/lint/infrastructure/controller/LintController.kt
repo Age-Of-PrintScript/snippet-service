@@ -9,7 +9,6 @@ import age.of.printscript.demo.lint.domain.ActiveLintRule
 import age.of.printscript.demo.lint.domain.LintRuleId
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
-import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -77,41 +76,23 @@ class LintController(
     private val lintSnippet: LintSnippet,
     private val updateLintRules: UpdateLintRules,
 ) {
-    private val log = LoggerFactory.getLogger(LintController::class.java)
-
     @PutMapping("/rules")
     fun updateRules(
         @AuthenticationPrincipal jwt: Jwt,
         @RequestBody request: UpdateLintRulesRequest,
     ): ResponseEntity<Any> =
-        when (val result = updateLintRules(UserId(jwt.subject), request.rules.map { it.toRuleSelection() })) {
-            is UpdateLintRulesResult.Success -> {
-                log.info("Updated {} lint rules", result.activeRules.size)
-                result.toResponseEntity()
-            }
-            is UpdateLintRulesResult.InvalidRules -> {
-                log.warn("Failed to update lint rules: unknown rule IDs {}", result.unknownRuleIds)
-                result.toResponseEntity()
-            }
-        }
+        updateLintRules(
+            UserId(jwt.subject),
+            request.rules.map { it.toRuleSelection() },
+        ).toResponseEntity()
 
     @PostMapping("/{id}")
     fun lint(
         @PathVariable id: String,
         @AuthenticationPrincipal jwt: Jwt,
     ): ResponseEntity<LintJobAcceptedResponse> =
-        when (val result = lintSnippet(SnippetId(id), UserId(jwt.subject))) {
-            is LintSnippetResult.Accepted -> {
-                log.info("Lint job accepted for snippet id={}, jobId={}", id, result.jobId)
-                result.toResponseEntity()
-            }
-            is LintSnippetResult.NotFound -> {
-                log.warn("Cannot lint snippet id={}: not found", id)
-                result.toResponseEntity()
-            }
-            is LintSnippetResult.Forbidden -> {
-                log.warn("Cannot lint snippet id={}: access denied", id)
-                result.toResponseEntity()
-            }
-        }
+        lintSnippet(
+            SnippetId(id),
+            UserId(jwt.subject),
+        ).toResponseEntity()
 }

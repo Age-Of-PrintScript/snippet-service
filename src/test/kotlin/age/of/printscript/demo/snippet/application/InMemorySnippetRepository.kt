@@ -2,7 +2,6 @@ package age.of.printscript.demo.snippet.application
 
 import age.of.printscript.demo.snippet.domain.Snippet
 import age.of.printscript.demo.snippet.domain.SnippetId
-import age.of.printscript.demo.snippet.domain.SnippetPage
 import age.of.printscript.demo.snippet.domain.SnippetRepository
 import age.of.printscript.demo.snippet.domain.UserId
 
@@ -28,25 +27,6 @@ class InMemorySnippetRepository(
         snippets.filter {
             it.ownerId == ownerId && it.isLatest
         }
-
-    override fun findLatestByIds(
-        ids: List<SnippetId>,
-        name: String?,
-        page: Int,
-        pageSize: Int,
-    ): SnippetPage {
-        val idSet = ids.toSet()
-        val filter = name?.trim()?.takeIf { it.isNotEmpty() }
-        val matching =
-            snippets.filter {
-                it.isLatest &&
-                    it.id in idSet &&
-                    (filter == null || it.title.contains(filter, ignoreCase = true))
-            }
-        val fromIndex = (page.coerceAtLeast(0) * pageSize.coerceAtLeast(1)).coerceAtMost(matching.size)
-        val toIndex = (fromIndex + pageSize.coerceAtLeast(1)).coerceAtMost(matching.size)
-        return SnippetPage(matching.subList(fromIndex, toIndex), matching.size.toLong())
-    }
 
     override fun save(snippet: Snippet): Snippet {
         if (snippet.isLatest) {

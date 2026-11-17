@@ -3,17 +3,16 @@ package age.of.printscript.demo.snippet.infrastructure.controller
 import age.of.printscript.demo.snippet.application.CreateSnippet
 import age.of.printscript.demo.snippet.application.CreateSnippetDto
 import age.of.printscript.demo.snippet.application.CreateSnippetResult
+import age.of.printscript.demo.snippet.application.CreateSnippetTest
+import age.of.printscript.demo.snippet.application.CreateSnippetTestDto
+import age.of.printscript.demo.snippet.application.CreateSnippetTestResult
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.GetSnippetResult
-import age.of.printscript.demo.snippet.application.ListSnippets
-import age.of.printscript.demo.snippet.application.ListSnippetsResult
-import age.of.printscript.demo.snippet.application.SnippetSummary
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.UpdateSnippetResult
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.SnippetWithContent
 import age.of.printscript.demo.snippet.domain.UserId
-import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -26,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.Instant
 
 data class CreateSnippetRequest(
     val title: String,
@@ -39,23 +39,6 @@ data class UpdateSnippetRequest(
     val content: String,
 )
 
-data class SnippetSummaryResponse(
-    val snippetId: String,
-    val title: String,
-    val compliance: String,
-    val author: String,
-    val language: String,
-    val languageVersion: String,
-    val role: String,
-)
-
-data class PaginatedSnippetsResponse(
-    val page: Int,
-    val pageSize: Int,
-    val total: Long,
-    val snippets: List<SnippetSummaryResponse>,
-)
-
 data class SnippetResponse(
     val id: String,
     val version: Int,
@@ -67,6 +50,17 @@ data class SnippetResponse(
     val content: String,
 )
 
+data class CreateSnippetTestRequest(
+    val inputs: List<String>,
+    val outputs: List<String>,
+)
+
+data class SnippetTestResponse(
+    val id: String,
+    val snippetId: String,
+    val createdAt: Instant,
+)
+
 private fun CreateSnippetRequest.toDto(ownerId: UserId) =
     CreateSnippetDto(
         title = title,
@@ -76,24 +70,15 @@ private fun CreateSnippetRequest.toDto(ownerId: UserId) =
         languageVersion = languageVersion,
     )
 
-private fun SnippetSummary.toResponse() =
-    SnippetSummaryResponse(
-        snippetId = snippetId.value,
-        title = title,
-        compliance = compliance.name,
-        author = author.value,
-        language = language,
-        languageVersion = languageVersion,
-        role = role,
-    )
-
-private fun ListSnippetsResult.toResponse() =
-    PaginatedSnippetsResponse(
-        page = page,
-        pageSize = pageSize,
-        total = total,
-        snippets = snippets.map { it.toResponse() },
-    )
+private fun CreateSnippetTestRequest.toDto(
+    snippetId: SnippetId,
+    ownerId: UserId,
+) = CreateSnippetTestDto(
+    snippetId = snippetId,
+    ownerId = ownerId,
+    inputs = inputs,
+    outputs = outputs,
+)
 
 private fun SnippetWithContent.toResponse() =
     SnippetResponse(
@@ -136,83 +121,49 @@ private fun UpdateSnippetResult.toResponseEntity(): ResponseEntity<Any> =
             ResponseEntity.badRequest().body(mapOf("error" to "Unsupported version: $version"))
     }
 
+private fun CreateSnippetTestResult.toResponseEntity(): ResponseEntity<SnippetTestResponse> =
+    when (this) {
+        is CreateSnippetTestResult.Created ->
+            ResponseEntity.status(HttpStatus.CREATED).body(
+                SnippetTestResponse(
+                    id = test.id.value,
+                    snippetId = test.snippetId.value,
+                    createdAt = test.createdAt,
+                ),
+            )
+        is CreateSnippetTestResult.NotFound -> ResponseEntity.notFound().build()
+        is CreateSnippetTestResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+    }
+
 @RestController
 @RequestMapping("/snippet")
 class SnippetController(
     private val getSnippet: GetSnippet,
-    private val listSnippets: ListSnippets,
     private val createSnippet: CreateSnippet,
+    private val createSnippetTest: CreateSnippetTest,
     private val updateSnippet: UpdateSnippet,
 ) {
-    private val log = LoggerFactory.getLogger(SnippetController::class.java)
-
-    @GetMapping
-    fun list(
-        @RequestParam(defaultValue = "0") page: Int,
-        @RequestParam(defaultValue = "10") pageSize: Int,
-        @RequestParam(required = false) name: String?,
-    ): ResponseEntity<PaginatedSnippetsResponse> {
-        val result = listSnippets(page = page, pageSize = pageSize, name = name)
-        log.info(
-            "Listed snippets page={} pageSize={} nameFilter='{}' count={} total={}",
-            page,
-            pageSize,
-            name ?: "",
-            result.snippets.size,
-            result.total,
-        )
-        return ResponseEntity.ok(result.toResponse())
-    }
-
     @GetMapping("/{id}")
     fun get(
         @PathVariable id: String,
         @AuthenticationPrincipal jwt: Jwt,
         @RequestParam(required = false) version: Int?,
     ): ResponseEntity<SnippetResponse> =
-        when (val result = getSnippet(SnippetId(id), UserId(jwt.subject), version)) {
-            is GetSnippetResult.Success -> {
-                log.info("Fetched snippet id={} version={}", id, result.snippet.version)
-                result.toResponseEntity()
-            }
-            is GetSnippetResult.NotFound -> {
-                log.warn("Snippet id={} not found", id)
-                result.toResponseEntity()
-            }
-            is GetSnippetResult.Forbidden -> {
-                log.warn("Access denied for snippet id={}", id)
-                result.toResponseEntity()
-            }
-        }
+        getSnippet(
+            SnippetId(id),
+            UserId(jwt.subject),
+            version,
+        ).toResponseEntity()
 
     @PostMapping
     fun create(
         @AuthenticationPrincipal jwt: Jwt,
         @RequestBody request: CreateSnippetRequest,
     ): ResponseEntity<Any> =
-        when (val result = createSnippet(request.toDto(UserId(jwt.subject)), request.content)) {
-            is CreateSnippetResult.Created -> {
-                log.info(
-                    "Created snippet id={} title='{}' language={}",
-                    result.snippet.id.value,
-                    request.title,
-                    request.language,
-                )
-                result.toResponseEntity()
-            }
-            is CreateSnippetResult.InvalidSnippet -> {
-                log.warn("Failed to create snippet: invalid syntax/errors={}", result.errors)
-                result.toResponseEntity()
-            }
-            is CreateSnippetResult.UnsupportedLanguage -> {
-                log.warn("Failed to create snippet: unsupported language={}", result.language)
-                result.toResponseEntity()
-            }
-            is CreateSnippetResult.UnsupportedVersion -> {
-                log.warn("Failed to create snippet: unsupported version={}", result.version)
-                result.toResponseEntity()
-            }
-        }
+        createSnippet(
+            request.toDto(UserId(jwt.subject)),
+            request.content,
+        ).toResponseEntity()
 
     @PutMapping("/{id}")
     fun update(
@@ -220,30 +171,19 @@ class SnippetController(
         @AuthenticationPrincipal jwt: Jwt,
         @RequestBody request: UpdateSnippetRequest,
     ): ResponseEntity<Any> =
-        when (val result = updateSnippet(SnippetId(id), UserId(jwt.subject), request.content)) {
-            is UpdateSnippetResult.Updated -> {
-                log.info("Updated snippet id={} newVersion={}", id, result.snippet.version)
-                result.toResponseEntity()
-            }
-            is UpdateSnippetResult.NotFound -> {
-                log.warn("Cannot update snippet id={}: not found", id)
-                result.toResponseEntity()
-            }
-            is UpdateSnippetResult.Forbidden -> {
-                log.warn("Cannot update snippet id={}: access denied", id)
-                result.toResponseEntity()
-            }
-            is UpdateSnippetResult.InvalidSnippet -> {
-                log.warn("Cannot update snippet id={}: invalid snippet with errors={}", id, result.errors)
-                result.toResponseEntity()
-            }
-            is UpdateSnippetResult.UnsupportedLanguage -> {
-                log.warn("Cannot update snippet id={}: unsupported language={}", id, result.language)
-                result.toResponseEntity()
-            }
-            is UpdateSnippetResult.UnsupportedVersion -> {
-                log.warn("Cannot update snippet id={}: unsupported version={}", id, result.version)
-                result.toResponseEntity()
-            }
-        }
+        updateSnippet(
+            SnippetId(id),
+            UserId(jwt.subject),
+            request.content,
+        ).toResponseEntity()
+
+    @PostMapping("/{id}/test")
+    fun createTest(
+        @PathVariable id: String,
+        @AuthenticationPrincipal jwt: Jwt,
+        @RequestBody request: CreateSnippetTestRequest,
+    ): ResponseEntity<SnippetTestResponse> =
+        createSnippetTest(
+            request.toDto(SnippetId(id), UserId(jwt.subject)),
+        ).toResponseEntity()
 }
