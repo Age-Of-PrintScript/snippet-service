@@ -13,6 +13,12 @@ import age.of.printscript.demo.snippet.domain.SnippetRepository
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.domain.ValidationError
 import age.of.printscript.demo.snippet.domain.ValidationResult
+import age.of.printscript.demo.testing.application.CompleteTestJob
+import age.of.printscript.demo.testing.application.FakeTestJobPublisher
+import age.of.printscript.demo.testing.application.InMemorySnippetTestRepository
+import age.of.printscript.demo.testing.application.RunSnippetTests
+import age.of.printscript.demo.testing.domain.SnippetTest
+import age.of.printscript.demo.testing.domain.SnippetTestId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -193,5 +199,102 @@ class UpdateSnippetTest {
         val job = publisher.publishedLintJobs.first()
         assertEquals(2, job.snippet.version)
         assertEquals(LintStatus.PENDING, lintStatusRepo.findByVersion(existing.id, 2)?.status)
+    }
+
+    @Test
+    fun `enqueues all tests for new version after updating snippet`() {
+        val existing = createDummySnippet(ownerId = UserId("alice"), version = 1)
+        val repo = InMemorySnippetRepository(listOf(existing))
+        val storage = FakeSnippetStorage()
+        val testsRepo = InMemorySnippetTestRepository()
+        val publisher = FakeTestJobPublisher()
+        val jobsRepo = InMemoryJobRepository()
+        val runSnippetTests =
+            RunSnippetTests(
+                snippets = repo,
+                tests = testsRepo,
+                permissions = FakePermissionGateway(),
+                jobs = jobsRepo,
+                publisher = publisher,
+                completeTestJob = CompleteTestJob(jobsRepo, testsRepo),
+            )
+        val test1 =
+            SnippetTest(
+                id = SnippetTestId("test-1"),
+                snippetId = existing.id,
+                ownerId = UserId("alice"),
+                contentUrl = "url-test-1",
+            )
+        val test2 =
+            SnippetTest(
+                id = SnippetTestId("test-2"),
+                snippetId = existing.id,
+                ownerId = UserId("alice"),
+                contentUrl = "url-test-2",
+            )
+        testsRepo.save(test1)
+        testsRepo.save(test2)
+
+        val language = FakeLanguage(name = "printscript", result = ValidationResult.Success)
+        val updateSnippet =
+            UpdateSnippet(
+                snippetRepository = repo,
+                snippetStorage = storage,
+                languages = listOf(language),
+                runSnippetTests = runSnippetTests,
+            )
+
+        val result = updateSnippet(existing.id, UserId("alice"), updatedCode)
+
+        val updated = (result as UpdateSnippetResult.Updated).snippet
+        assertEquals(2, updated.version)
+        assertEquals(2, publisher.published.size)
+        assertEquals(listOf("url-test-1", "url-test-2"), publisher.published.map { it.testUrl })
+        publisher.published.forEach {
+            assertEquals(2, it.snippet.version)
+        }
+    }
+
+    @Test
+    fun `continues successfully when test publisher throws exception`() {
+        val existing = createDummySnippet(ownerId = UserId("alice"), version = 1)
+        val repo = InMemorySnippetRepository(listOf(existing))
+        val storage = FakeSnippetStorage()
+        val testsRepo = InMemorySnippetTestRepository()
+        val publisher = FakeTestJobPublisher().apply { failingUrls += "url-test-fail" }
+        val jobsRepo = InMemoryJobRepository()
+        val runSnippetTests =
+            RunSnippetTests(
+                snippets = repo,
+                tests = testsRepo,
+                permissions = FakePermissionGateway(),
+                jobs = jobsRepo,
+                publisher = publisher,
+                completeTestJob = CompleteTestJob(jobsRepo, testsRepo),
+            )
+        val test =
+            SnippetTest(
+                id = SnippetTestId("test-fail"),
+                snippetId = existing.id,
+                ownerId = UserId("alice"),
+                contentUrl = "url-test-fail",
+            )
+        testsRepo.save(test)
+
+        val language = FakeLanguage(name = "printscript", result = ValidationResult.Success)
+        val updateSnippet =
+            UpdateSnippet(
+                snippetRepository = repo,
+                snippetStorage = storage,
+                languages = listOf(language),
+                runSnippetTests = runSnippetTests,
+            )
+
+        val result = updateSnippet(existing.id, UserId("alice"), updatedCode)
+
+        assertTrue(result is UpdateSnippetResult.Updated)
+        val updated = (result as UpdateSnippetResult.Updated).snippet
+        assertEquals(2, updated.version)
+        assertEquals(2, repo.findLatest(existing.id)?.version)
     }
 }

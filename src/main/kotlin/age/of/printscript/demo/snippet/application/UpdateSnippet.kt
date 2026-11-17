@@ -12,6 +12,9 @@ import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.domain.ValidationError
 import age.of.printscript.demo.snippet.domain.ValidationResult
 import age.of.printscript.demo.snippet.domain.withContent
+import age.of.printscript.demo.testing.application.RunSnippetTests
+import age.of.printscript.demo.testing.application.TestSelection
+import age.of.printscript.demo.testing.application.TestSelectionType
 import org.slf4j.LoggerFactory
 
 class UpdateSnippet(
@@ -19,6 +22,7 @@ class UpdateSnippet(
     private val snippetStorage: SnippetStorage,
     private val languages: List<Language>,
     private val lintSnippet: LintSnippet? = null,
+    private val runSnippetTests: RunSnippetTests? = null,
 ) : UseCase {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -67,6 +71,13 @@ class UpdateSnippet(
             val saved = snippetRepository.save(updated)
             runCatching { lintSnippet?.invoke(saved.id, saved.ownerId) }
                 .onFailure { logger.warn("Failed to enqueue lint job for snippet {}", saved.id.value, it) }
+            runCatching {
+                runSnippetTests?.invoke(
+                    saved.id,
+                    saved.ownerId,
+                    TestSelection(TestSelectionType.ALL),
+                )
+            }.onFailure { logger.warn("Failed to enqueue tests for snippet {}", saved.id.value, it) }
             UpdateSnippetResult.Updated(saved.withContent(content))
         }.onFailure {
             snippetStorage.delete(contentUrl)
