@@ -1,14 +1,13 @@
 package age.of.printscript.demo.snippet.infrastructure.controller
 
+import age.of.printscript.demo.lint.application.InMemorySnippetLintStatusRepository
 import age.of.printscript.demo.snippet.application.CreateSnippet
-import age.of.printscript.demo.snippet.application.CreateSnippetTest
 import age.of.printscript.demo.snippet.application.FakeLanguage
 import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
-import age.of.printscript.demo.snippet.application.FakeSnippetTestStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
-import age.of.printscript.demo.snippet.application.InMemorySnippetTestRepository
+import age.of.printscript.demo.snippet.application.ListSnippets
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.application.testJwt
@@ -30,17 +29,10 @@ class SnippetControllerTest {
         languages: List<Language> = listOf(FakeLanguage()),
     ) = SnippetController(
         getSnippet = GetSnippet(repo, storage, permissions),
-        createSnippet = CreateSnippet(repo, storage, languages),
+        listSnippets = ListSnippets(permissions, repo, InMemorySnippetLintStatusRepository()),
+        createSnippet = CreateSnippet(repo, storage, languages, permissions),
         updateSnippet = UpdateSnippet(repo, storage, languages),
-        createSnippetTest = createSnippetTest(repo),
     )
-
-    private fun createSnippetTest(repo: InMemorySnippetRepository) =
-        CreateSnippetTest(
-            repo,
-            InMemorySnippetTestRepository(),
-            FakeSnippetTestStorage(),
-        )
 
     @Test
     fun `returns 200 OK with snippet when found`() {
@@ -117,49 +109,6 @@ class SnippetControllerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals(errors, response.body)
-    }
-
-    @Test
-    fun `createTest returns 201 CREATED with test summary when user owns snippet`() {
-        val snippet = createDummySnippet(ownerId = UserId("alice"))
-        val controller = buildController(repo = InMemorySnippetRepository(listOf(snippet)))
-        val request = CreateSnippetTestRequest(inputs = listOf("2", "3"), outputs = listOf("5"))
-
-        val response = controller.createTest(snippet.id.value, testJwt("alice"), request)
-
-        assertEquals(HttpStatus.CREATED, response.statusCode)
-        assertEquals(snippet.id.value, response.body?.snippetId)
-        assertEquals(false, response.body?.id.isNullOrBlank())
-        assertEquals(false, response.body?.createdAt == null)
-    }
-
-    @Test
-    fun `createTest returns 404 NOT FOUND when snippet does not exist`() {
-        val controller = buildController()
-
-        val response =
-            controller.createTest(
-                "unknown",
-                testJwt("alice"),
-                CreateSnippetTestRequest(emptyList(), emptyList()),
-            )
-
-        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
-    }
-
-    @Test
-    fun `createTest returns 403 FORBIDDEN when user does not own snippet`() {
-        val snippet = createDummySnippet(ownerId = UserId("alice"))
-        val controller = buildController(repo = InMemorySnippetRepository(listOf(snippet)))
-
-        val response =
-            controller.createTest(
-                snippet.id.value,
-                testJwt("bob"),
-                CreateSnippetTestRequest(emptyList(), emptyList()),
-            )
-
-        assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
     }
 
     @Test

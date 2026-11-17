@@ -9,6 +9,8 @@ interface SnippetLintStatusRepository {
         version: Int,
     ): SnippetLintStatus?
 
+    fun findStatuses(snippets: List<Snippet>): Map<SnippetId, LintStatus>
+
     fun save(lintStatus: SnippetLintStatus): SnippetLintStatus
 
     fun markAllPending(snippets: List<Snippet>)

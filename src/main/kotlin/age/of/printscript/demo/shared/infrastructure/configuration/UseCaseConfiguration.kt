@@ -8,6 +8,7 @@ import org.springframework.context.annotation.FilterType
 @Configuration
 @ComponentScan(
     basePackages = ["age.of.printscript.demo"],
+    useDefaultFilters = false,
     includeFilters = [
         ComponentScan.Filter(
             type = FilterType.ASSIGNABLE_TYPE,
