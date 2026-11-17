@@ -9,6 +9,8 @@ import age.of.printscript.demo.snippet.application.DeleteSnippet
 import age.of.printscript.demo.snippet.application.DeleteSnippetResult
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.GetSnippetResult
+import age.of.printscript.demo.snippet.application.ListSnippetVersions
+import age.of.printscript.demo.snippet.application.ListSnippetVersionsResult
 import age.of.printscript.demo.snippet.application.ListSnippets
 import age.of.printscript.demo.snippet.application.ListSnippetsResult
 import age.of.printscript.demo.snippet.application.SnippetRelation
@@ -17,6 +19,7 @@ import age.of.printscript.demo.snippet.application.SnippetSummary
 import age.of.printscript.demo.snippet.application.SortDirection
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.UpdateSnippetResult
+import age.of.printscript.demo.snippet.domain.Snippet
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.SnippetWithContent
 import age.of.printscript.demo.snippet.domain.UserId
@@ -82,6 +85,23 @@ data class SnippetResponse(
     val compliance: String = LintStatus.PENDING.name,
     val lintWarnings: List<LintWarningResponse> = emptyList(),
 )
+
+data class SnippetVersionResponse(
+    val id: String,
+    val version: Int,
+    val isLatest: Boolean,
+    val language: String,
+    val languageVersion: String,
+)
+
+private fun Snippet.toVersionResponse() =
+    SnippetVersionResponse(
+        id = id.value,
+        version = version,
+        isLatest = isLatest,
+        language = language,
+        languageVersion = languageVersion,
+    )
 
 private fun CreateSnippetRequest.toDto(ownerId: UserId) =
     CreateSnippetDto(
@@ -169,6 +189,7 @@ private fun UpdateSnippetResult.toResponseEntity(): ResponseEntity<Any> =
 class SnippetController(
     private val getSnippet: GetSnippet,
     private val listSnippets: ListSnippets,
+    private val listSnippetVersions: ListSnippetVersions,
     private val createSnippet: CreateSnippet,
     private val updateSnippet: UpdateSnippet,
     private val deleteSnippet: DeleteSnippet,
@@ -237,6 +258,26 @@ class SnippetController(
             is GetSnippetResult.Forbidden -> {
                 log.warn("Access denied for snippet id={}", id)
                 result.toResponseEntity()
+            }
+        }
+
+    @GetMapping("/{id}/versions")
+    fun listVersions(
+        @PathVariable id: String,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): ResponseEntity<List<SnippetVersionResponse>> =
+        when (val result = listSnippetVersions(SnippetId(id), UserId(jwt.subject))) {
+            is ListSnippetVersionsResult.Success -> {
+                log.info("Listed {} versions for snippet id={}", result.versions.size, id)
+                ResponseEntity.ok(result.versions.map { it.toVersionResponse() })
+            }
+            is ListSnippetVersionsResult.NotFound -> {
+                log.warn("Cannot list versions for snippet id={}: not found", id)
+                ResponseEntity.notFound().build()
+            }
+            is ListSnippetVersionsResult.Forbidden -> {
+                log.warn("Cannot list versions for snippet id={}: access denied", id)
+                ResponseEntity.status(HttpStatus.FORBIDDEN).build()
             }
         }
 
