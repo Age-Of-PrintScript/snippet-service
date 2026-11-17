@@ -72,6 +72,19 @@ class PostgresSnippetRepository(
         return SnippetPage(result.content.map { it.toDomain() }, result.totalElements)
     }
 
+    override fun findAllVersions(id: SnippetId): List<Snippet> {
+        val uuid = runCatching { UUID.fromString(id.value) }.getOrNull() ?: return emptyList()
+        return jpaRepository.findAllByIdOrderByVersionDesc(uuid).map { it.toDomain() }
+    }
+
+    @Transactional
+    override fun deleteById(id: SnippetId) {
+        val uuid = runCatching { UUID.fromString(id.value) }.getOrNull() ?: return
+        // V2 eliminó la FK de snippet_test -> snippet; limpiamos los tests manualmente.
+        tests.deleteAllBySnippetId(id)
+        jpaRepository.deleteAllById(uuid)
+    }
+
     @Transactional
     override fun save(snippet: Snippet): Snippet {
         val uuid = UUID.fromString(snippet.id.value)

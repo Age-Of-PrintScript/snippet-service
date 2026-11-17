@@ -58,4 +58,8 @@ class PostgresSnippetTestRepository(
     override fun invalidateForSnippet(snippetId: SnippetId) {
         jpaRepository.invalidateForSnippet(UUID.fromString(snippetId.value), Instant.now())
     }
+
+    override fun deleteAllBySnippetId(snippetId: SnippetId) {
+        jpaRepository.deleteAllBySnippetId(UUID.fromString(snippetId.value))
+    }
 }

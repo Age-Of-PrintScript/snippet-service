@@ -48,6 +48,15 @@ class InMemorySnippetRepository(
         return SnippetPage(matching.subList(fromIndex, toIndex), matching.size.toLong())
     }
 
+    override fun findAllVersions(id: SnippetId): List<Snippet> =
+        snippets
+            .filter { it.id == id }
+            .sortedByDescending { it.version }
+
+    override fun deleteById(id: SnippetId) {
+        snippets.removeIf { it.id == id }
+    }
+
     override fun save(snippet: Snippet): Snippet {
         if (snippet.isLatest) {
             snippets.replaceAll {

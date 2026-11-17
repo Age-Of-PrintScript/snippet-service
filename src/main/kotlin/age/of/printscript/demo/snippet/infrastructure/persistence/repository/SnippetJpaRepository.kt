@@ -29,6 +29,12 @@ interface SnippetJpaRepository : JpaRepository<SnippetEntity, SnippetEntityId> {
     ): Page<SnippetEntity>
 
     @Modifying
+    @Query("DELETE FROM SnippetEntity s WHERE s.id = :id")
+    fun deleteAllById(
+        @Param("id") id: UUID,
+    ): Int
+
+    @Modifying
     @Query(
         "UPDATE SnippetEntity s SET s.isLatest = false " +
             "WHERE s.id = :id AND s.version <> :version AND s.isLatest = true",
