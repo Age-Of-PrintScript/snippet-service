@@ -7,6 +7,7 @@ import age.of.printscript.demo.snippet.domain.UserId
 
 class FakePermissionGateway(
     private val allowedUsers: Set<Pair<SnippetId, UserId>> = emptySet(),
+    private val writableUsers: Set<Pair<SnippetId, UserId>> = emptySet(),
     private val failOnRegisterOwner: Boolean = false,
     private val accessibleSnippets: List<AccessibleSnippet> = emptyList(),
 ) : PermissionGateway {
@@ -16,6 +17,11 @@ class FakePermissionGateway(
         snippetId: SnippetId,
         userId: UserId,
     ): Boolean = (snippetId to userId) in allowedUsers
+
+    override fun hasWriteAccess(
+        snippetId: SnippetId,
+        userId: UserId,
+    ): Boolean = (snippetId to userId) in writableUsers
 
     override fun registerOwner(snippetId: SnippetId) {
         check(!failOnRegisterOwner) { "permissions-service unavailable" }

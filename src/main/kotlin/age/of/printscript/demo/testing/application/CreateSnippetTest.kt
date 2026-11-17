@@ -1,6 +1,7 @@
 package age.of.printscript.demo.testing.application
 
 import age.of.printscript.demo.shared.application.UseCase
+import age.of.printscript.demo.snippet.application.port.PermissionGateway
 import age.of.printscript.demo.snippet.domain.Snippet
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.SnippetRepository
@@ -18,6 +19,7 @@ class CreateSnippetTest(
     private val snippetRepository: SnippetRepository,
     private val snippetTestRepository: SnippetTestRepository,
     private val snippetTestStorage: SnippetTestStorage,
+    private val permissionGateway: PermissionGateway? = null,
 ) : UseCase {
     @Suppress("ReturnCount")
     operator fun invoke(request: CreateSnippetTestDto): CreateSnippetTestResult {
@@ -25,7 +27,10 @@ class CreateSnippetTest(
             snippetRepository.findLatest(request.snippetId)
                 ?: return CreateSnippetTestResult.NotFound
 
-        if (snippet.ownerId != request.ownerId) {
+        val hasAccess =
+            snippet.ownerId == request.ownerId ||
+                permissionGateway?.hasWriteAccess(snippet.id, request.ownerId) == true
+        if (!hasAccess) {
             return CreateSnippetTestResult.Forbidden
         }
 

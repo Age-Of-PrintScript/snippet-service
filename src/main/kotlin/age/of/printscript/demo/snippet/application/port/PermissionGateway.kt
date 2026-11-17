@@ -14,6 +14,11 @@ interface PermissionGateway {
         userId: UserId,
     ): Boolean
 
+    fun hasWriteAccess(
+        snippetId: SnippetId,
+        userId: UserId,
+    ): Boolean
+
     /** Registra al usuario autenticado como OWNER del snippet recién creado. */
     fun registerOwner(snippetId: SnippetId)
 
