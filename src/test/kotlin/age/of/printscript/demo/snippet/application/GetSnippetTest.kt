@@ -1,5 +1,9 @@
 package age.of.printscript.demo.snippet.application
 
+import age.of.printscript.demo.lint.application.InMemorySnippetLintStatusRepository
+import age.of.printscript.demo.lint.domain.LintStatus
+import age.of.printscript.demo.lint.domain.LintWarning
+import age.of.printscript.demo.lint.domain.SnippetLintStatus
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.domain.withContent
@@ -73,5 +77,41 @@ class GetSnippetTest {
         val result = getSnippet(snippetV1.id, UserId("alice"), version = 1)
 
         assertEquals(GetSnippetResult.Success(snippetV1.withContent(expectedCode)), result)
+    }
+
+    @Test
+    fun `returns compliance and lint warnings when lint status exists for snippet version`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"), version = 2)
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val storage = FakeSnippetStorage().apply { set(snippet.contentUrl, expectedCode) }
+        val warning =
+            LintWarning(
+                message = "Identifier 'theBestTeam' does not follow snake_case convention",
+                line = 1,
+                column = 5,
+            )
+        val lintRepo =
+            InMemorySnippetLintStatusRepository(
+                listOf(
+                    SnippetLintStatus(
+                        snippetId = snippet.id,
+                        version = 2,
+                        status = LintStatus.NON_COMPLIANT,
+                        warnings = listOf(warning),
+                    ),
+                ),
+            )
+        val getSnippet = GetSnippet(repo, storage, FakePermissionGateway(), lintRepo)
+
+        val result = getSnippet(snippet.id, UserId("alice"))
+
+        assertEquals(
+            GetSnippetResult.Success(
+                snippet = snippet.withContent(expectedCode),
+                compliance = LintStatus.NON_COMPLIANT,
+                lintWarnings = listOf(warning),
+            ),
+            result,
+        )
     }
 }

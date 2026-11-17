@@ -74,4 +74,56 @@ class ListSnippetsTest {
         assertEquals(1, page0.snippets.size)
         assertEquals(1, page1.snippets.size)
     }
+
+    @Test
+    fun `filters by relation, language, compliance and sorts results`() {
+        val s1 =
+            createDummySnippet(
+                id = SnippetId("s1"),
+                ownerId = UserId("alice"),
+            ).copy(title = "Zebra", language = "printscript")
+        val s2 =
+            createDummySnippet(
+                id = SnippetId("s2"),
+                ownerId = UserId("alice"),
+            ).copy(title = "Alpha", language = "python")
+        val s3 =
+            createDummySnippet(
+                id = SnippetId("s3"),
+                ownerId = UserId("bob"),
+            ).copy(title = "Beta", language = "printscript")
+        val accessible =
+            listOf(
+                AccessibleSnippet(SnippetId("s1"), "OWNER"),
+                AccessibleSnippet(SnippetId("s2"), "OWNER"),
+                AccessibleSnippet(SnippetId("s3"), "VIEWER"),
+            )
+        val permissions = FakePermissionGateway(accessibleSnippets = accessible)
+        val repo = InMemorySnippetRepository(listOf(s1, s2, s3))
+        val lintRepo =
+            InMemorySnippetLintStatusRepository(
+                listOf(
+                    SnippetLintStatus(SnippetId("s1"), version = 1, status = LintStatus.COMPLIANT),
+                    SnippetLintStatus(SnippetId("s2"), version = 1, status = LintStatus.NON_COMPLIANT),
+                    SnippetLintStatus(SnippetId("s3"), version = 1, status = LintStatus.COMPLIANT),
+                ),
+            )
+        val useCase = ListSnippets(permissions, repo, lintRepo)
+
+        val ownedOnly =
+            useCase(relation = SnippetRelation.OWNED, sortBy = SnippetSortField.NAME, sortDir = SortDirection.ASC)
+        assertEquals(listOf("Alpha", "Zebra"), ownedOnly.snippets.map { it.title })
+
+        val sharedOnly = useCase(relation = SnippetRelation.SHARED)
+        assertEquals(listOf("Beta"), sharedOnly.snippets.map { it.title })
+
+        val compliantPrintscript =
+            useCase(
+                language = "printscript",
+                compliance = LintStatus.COMPLIANT,
+                sortBy = SnippetSortField.NAME,
+                sortDir = SortDirection.DESC,
+            )
+        assertEquals(listOf("Zebra", "Beta"), compliantPrintscript.snippets.map { it.title })
+    }
 }
