@@ -5,6 +5,8 @@ import age.of.printscript.demo.snippet.domain.ValidationResult
 
 class FakeLanguage(
     override val name: String = "printscript",
+    override val fileTypes: List<String> = listOf("prs", "ps"),
+    override val versions: List<String> = listOf("1.0", "1.1"),
     private val result: ValidationResult = ValidationResult.Success,
 ) : Language {
     override fun validate(

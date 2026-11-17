@@ -34,6 +34,13 @@ class PrintscriptLanguageTest {
     }
 
     @Test
+    fun `exposes printscript metadata with supported fileTypes and versions`() {
+        assertEquals("printscript", language.name)
+        assertEquals(listOf("prs", "ps"), language.fileTypes)
+        assertEquals(listOf("1.0", "1.1"), language.versions)
+    }
+
+    @Test
     fun `validate returns Success when script is valid and service responds 204 No Content`() {
         val code = "let a: number = 5;"
         val version = "1.1"

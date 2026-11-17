@@ -132,6 +132,8 @@ class CreateSnippetUseCaseTest {
         val failingLanguage =
             object : Language {
                 override val name: String = "printscript"
+                override val fileTypes: List<String> = listOf("prs", "ps")
+                override val versions: List<String> = listOf("1.0", "1.1")
 
                 override fun validate(
                     code: String,
