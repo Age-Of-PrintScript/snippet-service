@@ -33,6 +33,7 @@ class DeleteSnippetTestUseCaseTest {
                 id = id,
                 snippetId = snippetId,
                 ownerId = owner,
+                name = "Test ${id.value}",
                 contentUrl = contentUrl,
                 status = status,
             )

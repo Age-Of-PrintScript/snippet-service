@@ -34,13 +34,14 @@ class TestsQueryControllerTest {
         val id = SnippetTestId(UUID.randomUUID().toString())
         val content = SnippetTestContent(listOf("input"), listOf("expected"))
         val url = storage.save(id, content)
-        tests.save(SnippetTest(id, snippet.id, snippet.ownerId, url, SnippetTestStatus.PASSED))
+        tests.save(SnippetTest(id, snippet.id, snippet.ownerId, "Sample test", url, SnippetTestStatus.PASSED))
 
         val response = controller.list(snippet.id.value, testJwt(snippet.ownerId.value))
         val item = (response.body as List<*>).single() as TestListItemResponse
 
         assertEquals(HttpStatus.OK, response.statusCode)
         assertEquals(id.value, item.id)
+        assertEquals("Sample test", item.name)
         assertEquals(content.inputs, item.inputs)
         assertEquals(content.outputs, item.outputs)
         assertEquals("PASSED", item.status)
@@ -49,7 +50,16 @@ class TestsQueryControllerTest {
     @Test
     fun `polling returns ids and statuses without reading test content`() {
         val id = SnippetTestId(UUID.randomUUID().toString())
-        tests.save(SnippetTest(id, snippet.id, snippet.ownerId, "unavailable-content", SnippetTestStatus.PENDING))
+        tests.save(
+            SnippetTest(
+                id,
+                snippet.id,
+                snippet.ownerId,
+                "Polling test",
+                "unavailable-content",
+                SnippetTestStatus.PENDING,
+            ),
+        )
 
         val response = controller.statuses(snippet.id.value, testJwt(snippet.ownerId.value))
 

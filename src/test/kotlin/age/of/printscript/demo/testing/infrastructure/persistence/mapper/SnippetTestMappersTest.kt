@@ -98,6 +98,7 @@ class SnippetTestMappersTest {
                 id = SnippetTestId(UUID.randomUUID().toString()),
                 snippetId = SnippetId(UUID.randomUUID().toString()),
                 ownerId = UserId("auth0|user"),
+                name = "Failed test",
                 contentUrl = "https://azure.blob/test-1",
                 status = SnippetTestStatus.FAILED,
                 activeJobId = JobId(UUID.randomUUID().toString()),

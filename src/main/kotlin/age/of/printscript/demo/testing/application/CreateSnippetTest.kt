@@ -54,6 +54,7 @@ class CreateSnippetTest(
         val contentUrl = snippetTestStorage.save(testId, content)
         val updated =
             existing.copy(
+                name = request.name,
                 contentUrl = contentUrl,
                 status = SnippetTestStatus.NOT_RUN,
                 activeJobId = null,
@@ -81,6 +82,7 @@ class CreateSnippetTest(
                 id = testId,
                 snippetId = snippet.id,
                 ownerId = request.ownerId,
+                name = request.name,
                 contentUrl = contentUrl,
             )
 
@@ -96,6 +98,7 @@ class CreateSnippetTest(
 data class CreateSnippetTestDto(
     val snippetId: SnippetId,
     val ownerId: UserId,
+    val name: String,
     val inputs: List<String>,
     val outputs: List<String>,
     val id: SnippetTestId? = null,

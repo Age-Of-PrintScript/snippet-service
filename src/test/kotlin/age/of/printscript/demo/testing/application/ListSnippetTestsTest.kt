@@ -28,6 +28,7 @@ class ListSnippetTestsTest {
         val result = listTests(snippet.id, snippet.ownerId) as ListSnippetTestsResult.Success
 
         assertEquals(SnippetTestStatus.NOT_RUN, result.tests.single().status)
+        assertEquals(test.name, result.tests.single().name)
         assertEquals(storage.read(test.contentUrl), result.tests.single().content)
         assertNull(tests.findById(test.id)?.activeJobId)
     }
@@ -41,6 +42,7 @@ class ListSnippetTestsTest {
                 id = id,
                 snippetId = snippet.id,
                 ownerId = snippet.ownerId,
+                name = "Passed test",
                 contentUrl = contentUrl,
                 status = SnippetTestStatus.PASSED,
                 activeJobId = JobId(UUID.randomUUID().toString()),
@@ -62,7 +64,7 @@ class ListSnippetTestsTest {
     private fun addTest(): SnippetTest {
         val id = SnippetTestId(UUID.randomUUID().toString())
         val url = storage.save(id, SnippetTestContent(listOf("input"), listOf("expected")))
-        val test = SnippetTest(id, snippet.id, snippet.ownerId, url)
+        val test = SnippetTest(id, snippet.id, snippet.ownerId, "Sample test", url)
         tests.save(test)
         return test
     }

@@ -19,11 +19,13 @@ class CreateSnippetTestUseCaseTest {
     private fun request(
         snippetId: SnippetId = SnippetId("snippet-1"),
         ownerId: UserId = UserId("alice"),
+        name: String = "Test",
         inputs: List<String> = listOf("2", "3"),
         outputs: List<String> = listOf("5"),
     ) = CreateSnippetTestDto(
         snippetId = snippetId,
         ownerId = ownerId,
+        name = name,
         inputs = inputs,
         outputs = outputs,
     )
@@ -35,12 +37,15 @@ class CreateSnippetTestUseCaseTest {
         val storage = FakeSnippetTestStorage()
         val createTest = CreateSnippetTest(InMemorySnippetRepository(listOf(snippet)), testRepository, storage)
 
-        val result = createTest(request())
+        val result = createTest(request(name = "Sum test"))
 
         assertTrue(result is CreateSnippetTestResult.Created)
+        val createdSummary = (result as CreateSnippetTestResult.Created).test
+        assertEquals("Sum test", createdSummary.name)
         val persistedTest = testRepository.savedTests.single().first
         assertEquals(snippet.id, persistedTest.snippetId)
         assertEquals(UserId("alice"), persistedTest.ownerId)
+        assertEquals("Sum test", persistedTest.name)
         assertEquals(
             SnippetTestContent(listOf("2", "3"), listOf("5")),
             storage.read(persistedTest.contentUrl),
@@ -125,6 +130,7 @@ class CreateSnippetTestUseCaseTest {
                 id = testId,
                 snippetId = snippet.id,
                 ownerId = snippet.ownerId,
+                name = "Old test",
                 contentUrl = oldUrl,
                 status = SnippetTestStatus.PASSED,
                 activeJobId = JobId("old-job"),
@@ -135,6 +141,7 @@ class CreateSnippetTestUseCaseTest {
         val result =
             createTest(
                 request(
+                    name = "Updated sum test",
                     inputs = listOf("10", "20"),
                     outputs = listOf("30"),
                 ).copy(id = testId),
@@ -143,9 +150,11 @@ class CreateSnippetTestUseCaseTest {
         assertTrue(result is CreateSnippetTestResult.Created)
         val updatedSummary = (result as CreateSnippetTestResult.Created).test
         assertEquals(testId, updatedSummary.id)
+        assertEquals("Updated sum test", updatedSummary.name)
         assertEquals(SnippetTestStatus.NOT_RUN, updatedSummary.status)
 
         val persisted = testRepository.findById(testId)
+        assertEquals("Updated sum test", persisted?.name)
         assertEquals(SnippetTestStatus.NOT_RUN, persisted?.status)
         assertNull(persisted?.activeJobId)
         assertEquals(
@@ -178,6 +187,7 @@ class CreateSnippetTestUseCaseTest {
                 id = testId,
                 snippetId = otherSnippet.id,
                 ownerId = snippet.ownerId,
+                name = "Other test",
                 contentUrl = "url",
             ),
         )
@@ -204,6 +214,7 @@ class CreateSnippetTestUseCaseTest {
                 id = testId,
                 snippetId = snippet.id,
                 ownerId = snippet.ownerId,
+                name = "Alice test",
                 contentUrl = "url",
             ),
         )

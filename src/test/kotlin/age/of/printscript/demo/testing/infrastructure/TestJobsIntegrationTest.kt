@@ -88,6 +88,7 @@ class TestJobsIntegrationTest {
                 SnippetTestId(UUID.randomUUID().toString()),
                 snippet.id,
                 snippet.ownerId,
+                "Broken test",
                 "http://localhost:18093/v1/asset/snippet-tests/missing-${UUID.randomUUID()}",
             )
         tests.save(broken)
@@ -174,7 +175,7 @@ class TestJobsIntegrationTest {
     ): SnippetTest {
         val id = SnippetTestId(UUID.randomUUID().toString())
         val url = testStorage.save(id, SnippetTestContent(emptyList(), listOf(expected)))
-        val test = SnippetTest(id, snippet.id, snippet.ownerId, url)
+        val test = SnippetTest(id, snippet.id, snippet.ownerId, "Expected $expected", url)
         tests.save(test)
         return test
     }

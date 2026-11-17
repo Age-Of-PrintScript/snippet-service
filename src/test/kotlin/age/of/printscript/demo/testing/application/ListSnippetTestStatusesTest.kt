@@ -66,7 +66,9 @@ class ListSnippetTestStatusesTest {
         status: SnippetTestStatus,
     ): SnippetTestId {
         val id = SnippetTestId(UUID.randomUUID().toString())
-        tests.save(SnippetTest(id, snippetId, snippet.ownerId, "https://assets/tests/${id.value}", status))
+        tests.save(
+            SnippetTest(id, snippetId, snippet.ownerId, "Status test", "https://assets/tests/${id.value}", status),
+        )
         return id
     }
 }

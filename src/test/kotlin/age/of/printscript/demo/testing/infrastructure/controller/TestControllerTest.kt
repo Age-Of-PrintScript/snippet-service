@@ -27,11 +27,12 @@ class TestControllerTest {
             controller.createTest(
                 snippet.id.value,
                 testJwt("alice"),
-                CreateSnippetTestRequest(inputs = listOf("2", "3"), outputs = listOf("5")),
+                CreateSnippetTestRequest(name = "Custom test name", inputs = listOf("2", "3"), outputs = listOf("5")),
             )
 
         assertEquals(HttpStatus.CREATED, response.statusCode)
         assertEquals(snippet.id.value, response.body?.snippetId)
+        assertEquals("Custom test name", response.body?.name)
         assertEquals(false, response.body?.id.isNullOrBlank())
         assertEquals(false, response.body?.createdAt == null)
     }
@@ -49,6 +50,7 @@ class TestControllerTest {
                 id = testId,
                 snippetId = snippet.id,
                 ownerId = snippet.ownerId,
+                name = "Test 1",
                 contentUrl = contentUrl,
                 status = SnippetTestStatus.PASSED,
             ),
@@ -60,6 +62,7 @@ class TestControllerTest {
                 snippet.id.value,
                 testJwt("alice"),
                 CreateSnippetTestRequest(
+                    name = "Updated test",
                     id = testId.value,
                     inputs = listOf("2", "3"),
                     outputs = listOf("5"),
@@ -68,6 +71,7 @@ class TestControllerTest {
 
         assertEquals(HttpStatus.CREATED, response.statusCode)
         assertEquals(testId.value, response.body?.id)
+        assertEquals("Updated test", response.body?.name)
         assertEquals(snippet.id.value, response.body?.snippetId)
         assertEquals(SnippetTestStatus.NOT_RUN, testRepo.findById(testId)?.status)
     }
@@ -78,7 +82,7 @@ class TestControllerTest {
             buildController().createTest(
                 "unknown",
                 testJwt("alice"),
-                CreateSnippetTestRequest(emptyList(), emptyList()),
+                CreateSnippetTestRequest(name = "Test", inputs = emptyList(), outputs = emptyList()),
             )
 
         assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
@@ -91,7 +95,7 @@ class TestControllerTest {
             buildController(InMemorySnippetRepository(listOf(snippet))).createTest(
                 snippet.id.value,
                 testJwt("bob"),
-                CreateSnippetTestRequest(emptyList(), emptyList()),
+                CreateSnippetTestRequest(name = "Test", inputs = emptyList(), outputs = emptyList()),
             )
 
         assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
@@ -110,6 +114,7 @@ class TestControllerTest {
                 id = testId,
                 snippetId = snippet.id,
                 ownerId = snippet.ownerId,
+                name = "Test 1",
                 contentUrl = contentUrl,
             ),
         )
@@ -143,6 +148,7 @@ class TestControllerTest {
                 id = testId,
                 snippetId = snippet.id,
                 ownerId = snippet.ownerId,
+                name = "Test 1",
                 contentUrl = contentUrl,
             ),
         )

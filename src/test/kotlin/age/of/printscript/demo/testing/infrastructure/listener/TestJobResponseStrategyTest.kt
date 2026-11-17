@@ -30,7 +30,7 @@ class TestJobResponseStrategyTest {
             val job = Job(JobId("job"), SnippetId("snippet"), 1, UserId("owner"), JobType("TEST"), JobStatus.PENDING)
             val jobs = InMemoryJobRepository(listOf(job))
             val tests = InMemorySnippetTestRepository()
-            val test = SnippetTest(SnippetTestId("test"), job.snippetId, job.userId, "test-url")
+            val test = SnippetTest(SnippetTestId("test"), job.snippetId, job.userId, "Test name", "test-url")
             tests.save(test)
             tests.markPending(test.id, job.id)
             val handler = JobResponseHandler(listOf(TestJobResponseStrategy(CompleteTestJob(jobs, tests))))

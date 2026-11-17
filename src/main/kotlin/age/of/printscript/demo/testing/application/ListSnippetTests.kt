@@ -15,6 +15,7 @@ import java.time.Instant
 data class VisibleTest(
     val id: SnippetTestId,
     val snippetId: SnippetId,
+    val name: String,
     val createdAt: Instant,
     val content: SnippetTestContent,
     val status: SnippetTestStatus,
@@ -50,6 +51,7 @@ class ListSnippetTests(
                 VisibleTest(
                     id = test.id,
                     snippetId = test.snippetId,
+                    name = test.name,
                     createdAt = test.createdAt,
                     content = storage.read(test.contentUrl),
                     status = test.status,

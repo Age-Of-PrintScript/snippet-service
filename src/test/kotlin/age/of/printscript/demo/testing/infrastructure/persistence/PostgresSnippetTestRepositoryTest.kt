@@ -33,6 +33,7 @@ class PostgresSnippetTestRepositoryTest {
                 id = SnippetTestId(testId.toString()),
                 snippetId = SnippetId(snippetId.toString()),
                 ownerId = UserId("alice"),
+                name = "Alice test",
                 contentUrl = contentUrl,
             )
         val savedEntity =
@@ -40,6 +41,7 @@ class PostgresSnippetTestRepositoryTest {
                 id = testId,
                 snippetId = snippetId,
                 ownerId = "alice",
+                name = "Alice test",
                 url = contentUrl,
                 createdAt = createdAt,
             )
@@ -50,6 +52,7 @@ class PostgresSnippetTestRepositoryTest {
         assertEquals(SnippetTestId(testId.toString()), result.id)
         assertEquals(SnippetId(snippetId.toString()), result.snippetId)
         assertEquals(UserId("alice"), result.ownerId)
+        assertEquals("Alice test", result.name)
         assertEquals(createdAt, result.createdAt)
     }
 
@@ -60,6 +63,7 @@ class PostgresSnippetTestRepositoryTest {
                 id = SnippetTestId(UUID.randomUUID().toString()),
                 snippetId = SnippetId(UUID.randomUUID().toString()),
                 ownerId = UserId("alice"),
+                name = "Alice test",
                 contentUrl = "https://asset/v1/asset/snippet-tests/test-1",
             )
         doThrow(DataIntegrityViolationException("Database unavailable")).`when`(jpaRepository).save(any())

@@ -150,7 +150,7 @@ class TestsRunControllerTest {
 
     private fun addTest(): SnippetTestId {
         val id = SnippetTestId(UUID.randomUUID().toString())
-        tests.save(SnippetTest(id, snippet.id, snippet.ownerId, "https://assets/tests/${id.value}"))
+        tests.save(SnippetTest(id, snippet.id, snippet.ownerId, "Run test", "https://assets/tests/${id.value}"))
         return id
     }
 }
