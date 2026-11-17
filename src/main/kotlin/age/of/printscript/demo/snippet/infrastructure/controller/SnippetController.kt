@@ -1,5 +1,7 @@
 package age.of.printscript.demo.snippet.infrastructure.controller
 
+import age.of.printscript.demo.lint.domain.LintStatus
+import age.of.printscript.demo.lint.domain.LintWarning
 import age.of.printscript.demo.snippet.application.CreateSnippet
 import age.of.printscript.demo.snippet.application.CreateSnippetDto
 import age.of.printscript.demo.snippet.application.CreateSnippetResult
@@ -9,7 +11,10 @@ import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.GetSnippetResult
 import age.of.printscript.demo.snippet.application.ListSnippets
 import age.of.printscript.demo.snippet.application.ListSnippetsResult
+import age.of.printscript.demo.snippet.application.SnippetRelation
+import age.of.printscript.demo.snippet.application.SnippetSortField
 import age.of.printscript.demo.snippet.application.SnippetSummary
+import age.of.printscript.demo.snippet.application.SortDirection
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.UpdateSnippetResult
 import age.of.printscript.demo.snippet.domain.SnippetId
@@ -59,6 +64,12 @@ data class PaginatedSnippetsResponse(
     val snippets: List<SnippetSummaryResponse>,
 )
 
+data class LintWarningResponse(
+    val message: String,
+    val line: Int,
+    val column: Int,
+)
+
 data class SnippetResponse(
     val id: String,
     val version: Int,
@@ -68,6 +79,8 @@ data class SnippetResponse(
     val language: String,
     val languageVersion: String,
     val content: String,
+    val compliance: String = LintStatus.PENDING.name,
+    val lintWarnings: List<LintWarningResponse> = emptyList(),
 )
 
 private fun CreateSnippetRequest.toDto(ownerId: UserId) =
@@ -98,21 +111,33 @@ private fun ListSnippetsResult.toResponse() =
         snippets = snippets.map { it.toResponse() },
     )
 
-private fun SnippetWithContent.toResponse() =
-    SnippetResponse(
-        id = id.value,
-        version = version,
-        title = title,
-        description = description,
-        ownerId = ownerId.value,
-        language = language,
-        languageVersion = languageVersion,
-        content = content,
+private fun LintWarning.toResponse() =
+    LintWarningResponse(
+        message = message,
+        line = line,
+        column = column,
     )
+
+private fun SnippetWithContent.toResponse(
+    compliance: LintStatus = LintStatus.PENDING,
+    lintWarnings: List<LintWarning> = emptyList(),
+) = SnippetResponse(
+    id = id.value,
+    version = version,
+    title = title,
+    description = description,
+    ownerId = ownerId.value,
+    language = language,
+    languageVersion = languageVersion,
+    content = content,
+    compliance = compliance.name,
+    lintWarnings = lintWarnings.map { it.toResponse() },
+)
 
 private fun GetSnippetResult.toResponseEntity(): ResponseEntity<SnippetResponse> =
     when (this) {
-        is GetSnippetResult.Success -> ResponseEntity.ok(snippet.toResponse())
+        is GetSnippetResult.Success ->
+            ResponseEntity.ok(snippet.toResponse(compliance = compliance, lintWarnings = lintWarnings))
         is GetSnippetResult.NotFound -> ResponseEntity.notFound().build()
         is GetSnippetResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
     }
@@ -151,22 +176,48 @@ class SnippetController(
     private val log = LoggerFactory.getLogger(SnippetController::class.java)
 
     @GetMapping
+    @Suppress("LongParameterList")
     fun list(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "10") pageSize: Int,
         @RequestParam(required = false) name: String?,
+        @RequestParam(required = false) relation: String?,
+        @RequestParam(required = false) language: String?,
+        @RequestParam(required = false) compliance: String?,
+        @RequestParam(required = false) sortBy: String?,
+        @RequestParam(defaultValue = "asc") sortDir: String,
     ): ResponseEntity<PaginatedSnippetsResponse> {
-        val result = listSnippets(page = page, pageSize = pageSize, name = name)
+        val parsedRelation = parseEnumOrNull<SnippetRelation>(relation) ?: SnippetRelation.ALL
+        val parsedCompliance = parseEnumOrNull<LintStatus>(compliance)
+        val parsedSortBy = parseEnumOrNull<SnippetSortField>(sortBy)
+        val parsedSortDir = parseEnumOrNull<SortDirection>(sortDir) ?: SortDirection.ASC
+        val result =
+            listSnippets(
+                page = page,
+                pageSize = pageSize,
+                name = name,
+                relation = parsedRelation,
+                language = language,
+                compliance = parsedCompliance,
+                sortBy = parsedSortBy,
+                sortDir = parsedSortDir,
+            )
         log.info(
-            "Listed snippets page={} pageSize={} nameFilter='{}' count={} total={}",
+            "Listed snippets page={} pageSize={} nameFilter='{}' relation={} count={} total={}",
             page,
             pageSize,
             name ?: "",
+            parsedRelation,
             result.snippets.size,
             result.total,
         )
         return ResponseEntity.ok(result.toResponse())
     }
+
+    private inline fun <reified T : Enum<T>> parseEnumOrNull(raw: String?): T? =
+        raw?.trim()?.takeIf { it.isNotEmpty() }?.let { value ->
+            enumValues<T>().firstOrNull { it.name.equals(value, ignoreCase = true) }
+        }
 
     @GetMapping("/{id}")
     fun get(
