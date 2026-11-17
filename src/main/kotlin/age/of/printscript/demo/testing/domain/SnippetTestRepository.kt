@@ -23,5 +23,6 @@ interface SnippetTestRepository {
     fun invalidateForSnippet(snippetId: SnippetId)
 
     fun deleteById(id: SnippetTestId)
+
     fun deleteAllBySnippetId(snippetId: SnippetId)
 }
