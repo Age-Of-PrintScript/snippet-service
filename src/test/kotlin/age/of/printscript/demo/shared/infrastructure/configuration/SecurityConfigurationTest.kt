@@ -8,6 +8,7 @@ import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
+import age.of.printscript.demo.snippet.application.ListSnippetVersions
 import age.of.printscript.demo.snippet.application.ListSnippets
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
@@ -69,6 +70,12 @@ class SecurityConfigurationTest {
                 InMemorySnippetRepository(),
                 InMemorySnippetLintStatusRepository(),
             )
+
+        @Bean
+        fun listSnippetVersions(): ListSnippetVersions {
+            val snippet = createDummySnippet(ownerId = UserId("auth0|alice"))
+            return ListSnippetVersions(InMemorySnippetRepository(listOf(snippet)), FakePermissionGateway())
+        }
 
         @Bean
         fun createSnippet(): CreateSnippet {
@@ -146,6 +153,20 @@ class SecurityConfigurationTest {
     @Test
     fun `GET snippet without token returns 401`() {
         mockMvc.perform(get("/snippet/any")).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `GET snippet versions without token returns 401`() {
+        mockMvc.perform(get("/snippet/snippet-1/versions")).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `GET snippet versions with valid jwt returns 200`() {
+        mockMvc
+            .perform(
+                get("/snippet/snippet-1/versions")
+                    .with(jwt().jwt { it.subject("auth0|alice") }),
+            ).andExpect(status().isOk)
     }
 
     @Test

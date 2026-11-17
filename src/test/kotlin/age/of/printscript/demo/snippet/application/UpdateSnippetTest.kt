@@ -300,4 +300,25 @@ class UpdateSnippetTest {
         assertEquals(2, updated.version)
         assertEquals(2, repo.findLatest(existing.id)?.version)
     }
+
+    @Test
+    fun `allows editor with write permission to update snippet`() {
+        val existing = createDummySnippet(ownerId = UserId("alice"), version = 1)
+        val repo = InMemorySnippetRepository(listOf(existing))
+        val storage = FakeSnippetStorage().apply { set(existing.contentUrl, initialCode) }
+        val language = FakeLanguage(name = "printscript", result = ValidationResult.Success)
+        val permissions = FakePermissionGateway(writableUsers = setOf(existing.id to UserId("bob")))
+        val updateSnippet =
+            UpdateSnippet(
+                snippetRepository = repo,
+                snippetStorage = storage,
+                languages = listOf(language),
+                permissionGateway = permissions,
+            )
+
+        val result = updateSnippet(existing.id, UserId("bob"), updatedCode)
+
+        assertTrue(result is UpdateSnippetResult.Updated)
+        assertEquals(2, (result as UpdateSnippetResult.Updated).snippet.version)
+    }
 }
