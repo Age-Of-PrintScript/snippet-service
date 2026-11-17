@@ -16,7 +16,7 @@ class InMemorySnippetTestRepository(
 
     override fun findAllBySnippetId(snippetId: SnippetId): List<SnippetTestSummary> =
         savedTests.map { it.first }.filter { it.snippetId == snippetId }.map {
-            SnippetTestSummary(it.id, it.snippetId, it.ownerId, Instant.now(), it.contentUrl, it.status)
+            SnippetTestSummary(it.id, it.snippetId, it.ownerId, it.name, Instant.now(), it.contentUrl, it.status)
         }
 
     override fun findById(id: SnippetTestId): SnippetTest? = savedTests.map { it.first }.find { it.id == id }
@@ -70,6 +70,7 @@ class InMemorySnippetTestRepository(
             id = test.id,
             snippetId = test.snippetId,
             ownerId = test.ownerId,
+            name = test.name,
             createdAt = Instant.now(),
             contentUrl = test.contentUrl,
             status = test.status,

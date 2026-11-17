@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
 
 data class CreateSnippetTestRequest(
+    val name: String,
     val inputs: List<String>,
     val outputs: List<String>,
     val id: String? = null,
@@ -30,6 +31,7 @@ data class CreateSnippetTestRequest(
 
 data class SnippetTestResponse(
     val id: String,
+    val name: String,
     val snippetId: String,
     val createdAt: Instant,
 )
@@ -40,6 +42,7 @@ private fun CreateSnippetTestRequest.toDto(
 ) = CreateSnippetTestDto(
     snippetId = snippetId,
     ownerId = ownerId,
+    name = name,
     inputs = inputs,
     outputs = outputs,
     id = id?.let { SnippetTestId(it) },
@@ -51,6 +54,7 @@ private fun CreateSnippetTestResult.toResponseEntity(): ResponseEntity<SnippetTe
             ResponseEntity.status(HttpStatus.CREATED).body(
                 SnippetTestResponse(
                     id = test.id.value,
+                    name = test.name,
                     snippetId = test.snippetId.value,
                     createdAt = test.createdAt,
                 ),

@@ -116,7 +116,7 @@ class SecurityConfigurationTest {
 
     private val createBody =
         """{"title":"t","description":null,"language":"printscript","languageVersion":"1.1","content":"x"}"""
-    private val createTestBody = """{"inputs":["2","3"],"outputs":["5"]}"""
+    private val createTestBody = """{"name":"Test 1","inputs":["2","3"],"outputs":["5"]}"""
 
     @BeforeEach
     fun setUp() {

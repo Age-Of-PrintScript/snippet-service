@@ -97,6 +97,16 @@ class CompleteTestJobTest {
     ): Job = jobs.save(Job(JobId(id), snippetId, 1, UserId("owner"), JobType(type), JobStatus.PENDING))
 
     private fun addPendingTest(jobId: JobId) {
-        tests.save(SnippetTest(testId, snippetId, UserId("owner"), "test-url", SnippetTestStatus.PENDING, jobId))
+        tests.save(
+            SnippetTest(
+                testId,
+                snippetId,
+                UserId("owner"),
+                "Pending test",
+                "test-url",
+                SnippetTestStatus.PENDING,
+                jobId,
+            ),
+        )
     }
 }

@@ -223,6 +223,7 @@ class UpdateSnippetTest {
                 id = SnippetTestId("test-1"),
                 snippetId = existing.id,
                 ownerId = UserId("alice"),
+                name = "Test 1",
                 contentUrl = "url-test-1",
             )
         val test2 =
@@ -230,6 +231,7 @@ class UpdateSnippetTest {
                 id = SnippetTestId("test-2"),
                 snippetId = existing.id,
                 ownerId = UserId("alice"),
+                name = "Test 2",
                 contentUrl = "url-test-2",
             )
         testsRepo.save(test1)
@@ -277,6 +279,7 @@ class UpdateSnippetTest {
                 id = SnippetTestId("test-fail"),
                 snippetId = existing.id,
                 ownerId = UserId("alice"),
+                name = "Failing test",
                 contentUrl = "url-test-fail",
             )
         testsRepo.save(test)
