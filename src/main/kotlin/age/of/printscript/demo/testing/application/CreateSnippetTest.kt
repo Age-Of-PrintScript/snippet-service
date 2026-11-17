@@ -10,6 +10,7 @@ import age.of.printscript.demo.testing.domain.SnippetTest
 import age.of.printscript.demo.testing.domain.SnippetTestContent
 import age.of.printscript.demo.testing.domain.SnippetTestId
 import age.of.printscript.demo.testing.domain.SnippetTestRepository
+import age.of.printscript.demo.testing.domain.SnippetTestStatus
 import age.of.printscript.demo.testing.domain.SnippetTestSummary
 import java.util.UUID
 
@@ -18,17 +19,57 @@ class CreateSnippetTest(
     private val snippetTestRepository: SnippetTestRepository,
     private val snippetTestStorage: SnippetTestStorage,
 ) : UseCase {
+    @Suppress("ReturnCount")
     operator fun invoke(request: CreateSnippetTestDto): CreateSnippetTestResult {
-        val snippet = snippetRepository.findLatest(request.snippetId)
+        val snippet =
+            snippetRepository.findLatest(request.snippetId)
+                ?: return CreateSnippetTestResult.NotFound
 
-        return when {
-            snippet == null -> CreateSnippetTestResult.NotFound
-            snippet.ownerId != request.ownerId -> CreateSnippetTestResult.Forbidden
-            else -> persistTest(snippet, request)
+        if (snippet.ownerId != request.ownerId) {
+            return CreateSnippetTestResult.Forbidden
+        }
+
+        return if (request.id != null) {
+            updateTest(snippet, request.id, request)
+        } else {
+            createTest(snippet, request)
         }
     }
 
-    private fun persistTest(
+    @Suppress("ReturnCount")
+    private fun updateTest(
+        snippet: Snippet,
+        testId: SnippetTestId,
+        request: CreateSnippetTestDto,
+    ): CreateSnippetTestResult {
+        val existing =
+            snippetTestRepository.findById(testId)
+                ?: return CreateSnippetTestResult.NotFound
+
+        if (existing.snippetId != snippet.id) {
+            return CreateSnippetTestResult.NotFound
+        }
+
+        val content = SnippetTestContent(request.inputs, request.outputs)
+        val contentUrl = snippetTestStorage.save(testId, content)
+        val updated =
+            existing.copy(
+                contentUrl = contentUrl,
+                status = SnippetTestStatus.NOT_RUN,
+                activeJobId = null,
+            )
+
+        return try {
+            CreateSnippetTestResult.Created(snippetTestRepository.save(updated))
+        } catch (failure: SnippetTestPersistenceException) {
+            if (existing.contentUrl != contentUrl) {
+                snippetTestStorage.delete(contentUrl)
+            }
+            throw failure
+        }
+    }
+
+    private fun createTest(
         snippet: Snippet,
         request: CreateSnippetTestDto,
     ): CreateSnippetTestResult {
@@ -57,6 +98,7 @@ data class CreateSnippetTestDto(
     val ownerId: UserId,
     val inputs: List<String>,
     val outputs: List<String>,
+    val id: SnippetTestId? = null,
 )
 
 sealed interface CreateSnippetTestResult {
