@@ -32,6 +32,7 @@ data class FormatRuleResponse(
 
 data class FormatRulesResponse(
     val rules: List<FormatRuleResponse>,
+    val activeRules: List<ActiveFormatRuleResponse>,
 )
 
 private fun FormatRule.toResponse() =
@@ -101,10 +102,22 @@ class FormatController(
     private val log = LoggerFactory.getLogger(FormatController::class.java)
 
     @GetMapping("/rules")
-    fun getRules(): ResponseEntity<FormatRulesResponse> {
-        val rules = getFormatRules().map { it.toResponse() }
-        log.info("Fetched {} format rules", rules.size)
-        return ResponseEntity.ok(FormatRulesResponse(rules))
+    fun getRules(
+        @AuthenticationPrincipal jwt: Jwt,
+    ): ResponseEntity<FormatRulesResponse> {
+        val snapshot = getFormatRules(UserId(jwt.subject))
+        log.info(
+            "Fetched {} format rules ({} active) for userId={}",
+            snapshot.rules.size,
+            snapshot.activeRules.size,
+            jwt.subject,
+        )
+        return ResponseEntity.ok(
+            FormatRulesResponse(
+                rules = snapshot.rules.map { it.toResponse() },
+                activeRules = snapshot.activeRules.map { it.toResponse() },
+            ),
+        )
     }
 
     @PutMapping("/rules")
