@@ -2,7 +2,6 @@ package age.of.printscript.demo.snippet.application
 
 import age.of.printscript.demo.snippet.domain.Snippet
 import age.of.printscript.demo.snippet.domain.SnippetId
-import age.of.printscript.demo.snippet.domain.SnippetPage
 import age.of.printscript.demo.snippet.domain.SnippetRepository
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.domain.ValidationError
@@ -136,13 +135,6 @@ class UpdateSnippetTest {
                 ): Snippet? = null
 
                 override fun findAllByOwner(ownerId: UserId): List<Snippet> = emptyList()
-
-                override fun findLatestByIds(
-                    ids: List<SnippetId>,
-                    name: String?,
-                    page: Int,
-                    pageSize: Int,
-                ): SnippetPage = SnippetPage(emptyList(), 0)
 
                 override fun save(snippet: Snippet): Snippet = error("Database unavailable")
             }

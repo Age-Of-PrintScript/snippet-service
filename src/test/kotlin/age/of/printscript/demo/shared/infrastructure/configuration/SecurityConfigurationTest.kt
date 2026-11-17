@@ -1,30 +1,26 @@
 package age.of.printscript.demo.shared.infrastructure.configuration
 
-import age.of.printscript.demo.lint.application.InMemorySnippetLintStatusRepository
 import age.of.printscript.demo.snippet.application.CreateSnippet
+import age.of.printscript.demo.snippet.application.CreateSnippetTest
 import age.of.printscript.demo.snippet.application.FakeLanguage
 import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
+import age.of.printscript.demo.snippet.application.FakeSnippetTestStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
-import age.of.printscript.demo.snippet.application.ListSnippets
+import age.of.printscript.demo.snippet.application.InMemorySnippetTestRepository
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.infrastructure.controller.SnippetController
-import age.of.printscript.demo.testing.application.CreateSnippetTest
-import age.of.printscript.demo.testing.application.DeleteSnippetTest
-import age.of.printscript.demo.testing.application.FakeSnippetTestStorage
-import age.of.printscript.demo.testing.application.InMemorySnippetTestRepository
-import age.of.printscript.demo.testing.infrastructure.controller.TestController
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.reset
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.security.oauth2.jwt.BadJwtException
@@ -33,7 +29,6 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity
 import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
@@ -46,9 +41,9 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc
 
 @SpringJUnitWebConfig(SecurityConfigurationTest.TestConfig::class)
 class SecurityConfigurationTest {
-    @TestConfiguration
+    @Configuration
     @EnableWebMvc
-    @Import(SecurityConfiguration::class, SnippetController::class, TestController::class)
+    @Import(SecurityConfiguration::class, SnippetController::class)
     class TestConfig {
         // Reemplaza al decoder real, que necesitaría contactar a Auth0 para obtener el JWKS.
         @Bean
@@ -62,17 +57,9 @@ class SecurityConfigurationTest {
         }
 
         @Bean
-        fun listSnippets(): ListSnippets =
-            ListSnippets(
-                FakePermissionGateway(),
-                InMemorySnippetRepository(),
-                InMemorySnippetLintStatusRepository(),
-            )
-
-        @Bean
         fun createSnippet(): CreateSnippet {
             val languages = listOf(FakeLanguage())
-            return CreateSnippet(InMemorySnippetRepository(), FakeSnippetStorage(), languages, FakePermissionGateway())
+            return CreateSnippet(InMemorySnippetRepository(), FakeSnippetStorage(), languages)
         }
 
         @Bean
@@ -85,16 +72,6 @@ class SecurityConfigurationTest {
         fun createSnippetTest(): CreateSnippetTest {
             val snippet = createDummySnippet(ownerId = UserId("auth0|alice"))
             return CreateSnippetTest(
-                InMemorySnippetRepository(listOf(snippet)),
-                InMemorySnippetTestRepository(),
-                FakeSnippetTestStorage(),
-            )
-        }
-
-        @Bean
-        fun deleteSnippetTest(): DeleteSnippetTest {
-            val snippet = createDummySnippet(ownerId = UserId("auth0|alice"))
-            return DeleteSnippetTest(
                 InMemorySnippetRepository(listOf(snippet)),
                 InMemorySnippetTestRepository(),
                 FakeSnippetTestStorage(),
@@ -125,16 +102,6 @@ class SecurityConfigurationTest {
     }
 
     @Test
-    fun `GET snippet list without token returns 401`() {
-        mockMvc.perform(get("/snippet")).andExpect(status().isUnauthorized)
-    }
-
-    @Test
-    fun `GET snippet list with valid jwt returns 200`() {
-        mockMvc.perform(get("/snippet").with(jwt())).andExpect(status().isOk)
-    }
-
-    @Test
     fun `GET snippet without token returns 401`() {
         mockMvc.perform(get("/snippet/any")).andExpect(status().isUnauthorized)
     }
@@ -157,13 +124,6 @@ class SecurityConfigurationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(createTestBody),
             ).andExpect(status().isUnauthorized)
-    }
-
-    @Test
-    fun `DELETE snippet test without token returns 401`() {
-        mockMvc
-            .perform(delete("/snippet/test/t1"))
-            .andExpect(status().isUnauthorized)
     }
 
     @Test

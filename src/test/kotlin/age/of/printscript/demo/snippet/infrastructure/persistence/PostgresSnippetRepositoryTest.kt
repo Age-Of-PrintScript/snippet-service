@@ -1,25 +1,17 @@
 package age.of.printscript.demo.snippet.infrastructure.persistence
 
-import age.of.printscript.demo.jobs.domain.JobId
-import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.Snippet
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.infrastructure.persistence.entity.SnippetEntity
 import age.of.printscript.demo.snippet.infrastructure.persistence.entity.SnippetEntityId
-import age.of.printscript.demo.snippet.infrastructure.persistence.mapper.toEntity
 import age.of.printscript.demo.snippet.infrastructure.persistence.repository.SnippetJpaRepository
-import age.of.printscript.demo.testing.application.InMemorySnippetTestRepository
-import age.of.printscript.demo.testing.domain.SnippetTest
-import age.of.printscript.demo.testing.domain.SnippetTestId
-import age.of.printscript.demo.testing.domain.SnippetTestStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
-import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
@@ -29,60 +21,7 @@ import java.util.UUID
 
 class PostgresSnippetRepositoryTest {
     private val jpaRepository: SnippetJpaRepository = mock(SnippetJpaRepository::class.java)
-    private val tests = InMemorySnippetTestRepository()
-    private val repository = PostgresSnippetRepository(jpaRepository, tests)
-
-    @Test
-    fun `saving a new snippet version invalidates only its tests`() {
-        val original = createDummySnippet(id = SnippetId(UUID.randomUUID().toString()))
-        val updated = original.copy(version = 2, contentUrl = "https://asset/snippet-v2")
-        val pending =
-            SnippetTest(
-                SnippetTestId("pending"),
-                original.id,
-                original.ownerId,
-                "test-url",
-                SnippetTestStatus.PENDING,
-                JobId("job"),
-            )
-        val passed = pending.copy(id = SnippetTestId("passed"), status = SnippetTestStatus.PASSED)
-        val unrelated = pending.copy(id = SnippetTestId("unrelated"), snippetId = SnippetId("other"))
-        listOf(pending, passed, unrelated).forEach { tests.save(it) }
-        `when`(
-            jpaRepository.findByIdAndIsLatestTrue(UUID.fromString(original.id.value)),
-        ).thenReturn(original.toEntity())
-        doAnswer { it.getArgument<SnippetEntity>(0) }.`when`(jpaRepository).save(org.mockito.ArgumentMatchers.any())
-
-        repository.save(updated)
-
-        listOf(pending, passed).forEach { test ->
-            assertEquals(SnippetTestStatus.NOT_RUN, tests.findById(test.id)?.status)
-            assertNull(tests.findById(test.id)?.activeJobId)
-        }
-        assertEquals(unrelated, tests.findById(unrelated.id))
-    }
-
-    @Test
-    fun `changing only snippet metadata preserves test results`() {
-        val original = createDummySnippet(id = SnippetId(UUID.randomUUID().toString()))
-        val test =
-            SnippetTest(
-                SnippetTestId("test"),
-                original.id,
-                original.ownerId,
-                "test-url",
-                SnippetTestStatus.PASSED,
-            )
-        tests.save(test)
-        `when`(
-            jpaRepository.findByIdAndIsLatestTrue(UUID.fromString(original.id.value)),
-        ).thenReturn(original.toEntity())
-        doAnswer { it.getArgument<SnippetEntity>(0) }.`when`(jpaRepository).save(org.mockito.ArgumentMatchers.any())
-
-        repository.save(original.copy(title = "Renamed"))
-
-        assertEquals(test, tests.findById(test.id))
-    }
+    private val repository = PostgresSnippetRepository(jpaRepository)
 
     @Test
     fun `findLatest returns mapped domain snippet when found`() {

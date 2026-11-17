@@ -3,7 +3,7 @@ services:
         image: postgres:17-alpine
         container_name: snippet-postgres
         ports:
-            - "5433:5432"
+            - "5432:5432"
         environment:
             POSTGRES_DB: snippet_db
             POSTGRES_USER: postgres
@@ -49,8 +49,6 @@ services:
             REDIS_HOST: redis
             AUTH0_DOMAIN: dev-ivkfg3acdd7t54se.us.auth0.com
             AUTH0_AUDIENCE: https://snippet-api-dev
-            NEW_RELIC_APP_NAME: "snippet-service"
-            NEW_RELIC_AGENT_ENABLED: "false"
         depends_on:
             - postgres
             - asset-service
@@ -71,4 +69,4 @@ volumes:
 
 secrets:
     gradle_properties:
-        file: ./gradle.properties
+        file: ~/.gradle/gradle.properties

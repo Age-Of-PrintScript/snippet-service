@@ -28,8 +28,7 @@ class CreateSnippetUseCaseTest {
         val repo = InMemorySnippetRepository()
         val storage = FakeSnippetStorage()
         val language = FakeLanguage(name = "printscript", result = ValidationResult.Success)
-        val permissions = FakePermissionGateway()
-        val createSnippet = CreateSnippet(repo, storage, listOf(language), permissions)
+        val createSnippet = CreateSnippet(repo, storage, listOf(language))
         val dto = createDto(language = "PrintScript")
 
         val result = createSnippet(dto, code)
@@ -46,34 +45,6 @@ class CreateSnippetUseCaseTest {
 
         val persisted = requireNotNull(repo.findLatest(created.id))
         assertEquals(code, storage.read(persisted.contentUrl))
-        assertEquals(listOf(created.id), permissions.registeredOwnerFor)
-    }
-
-    @Test
-    fun `does not register an owner when validation fails`() {
-        val permissions = FakePermissionGateway()
-        val language =
-            FakeLanguage(name = "printscript", result = ValidationResult.Failure(listOf(ValidationError("x"))))
-        val createSnippet =
-            CreateSnippet(InMemorySnippetRepository(), FakeSnippetStorage(), listOf(language), permissions)
-
-        createSnippet(createDto(), code)
-
-        assertTrue(permissions.registeredOwnerFor.isEmpty())
-    }
-
-    @Test
-    fun `deletes stored content and does not save when registering the owner fails`() {
-        val repo = InMemorySnippetRepository()
-        val storage = FakeSnippetStorage()
-        val language = FakeLanguage(name = "printscript", result = ValidationResult.Success)
-        val permissions = FakePermissionGateway(failOnRegisterOwner = true)
-        val createSnippet = CreateSnippet(repo, storage, listOf(language), permissions)
-
-        assertThrows(IllegalStateException::class.java) { createSnippet(createDto(), code) }
-
-        assertTrue(repo.findAllByOwner(UserId("alice")).isEmpty())
-        assertTrue(storage.isEmpty())
     }
 
     @Test
@@ -82,7 +53,7 @@ class CreateSnippetUseCaseTest {
         val storage = FakeSnippetStorage()
         val errors = listOf(ValidationError("Missing semicolon"))
         val language = FakeLanguage(name = "printscript", result = ValidationResult.Failure(errors))
-        val createSnippet = CreateSnippet(repo, storage, listOf(language), FakePermissionGateway())
+        val createSnippet = CreateSnippet(repo, storage, listOf(language))
 
         val result = createSnippet(createDto(), "let a: number = 5")
 
@@ -96,7 +67,7 @@ class CreateSnippetUseCaseTest {
         val repo = InMemorySnippetRepository()
         val storage = FakeSnippetStorage()
         val language = FakeLanguage(name = "printscript")
-        val createSnippet = CreateSnippet(repo, storage, listOf(language), FakePermissionGateway())
+        val createSnippet = CreateSnippet(repo, storage, listOf(language))
 
         val result = createSnippet(createDto(language = "python"), code)
 
@@ -110,7 +81,7 @@ class CreateSnippetUseCaseTest {
         val repo = InMemorySnippetRepository()
         val storage = FakeSnippetStorage()
         val language = FakeLanguage(name = "printscript", result = ValidationResult.UnsupportedVersion)
-        val createSnippet = CreateSnippet(repo, storage, listOf(language), FakePermissionGateway())
+        val createSnippet = CreateSnippet(repo, storage, listOf(language))
 
         val result = createSnippet(createDto(languageVersion = "9.9"), code)
 
@@ -132,7 +103,7 @@ class CreateSnippetUseCaseTest {
                     version: String,
                 ): ValidationResult = error("Language service unavailable")
             }
-        val createSnippet = CreateSnippet(repo, storage, listOf(failingLanguage), FakePermissionGateway())
+        val createSnippet = CreateSnippet(repo, storage, listOf(failingLanguage))
 
         assertThrows(IllegalStateException::class.java) {
             createSnippet(createDto(), code)

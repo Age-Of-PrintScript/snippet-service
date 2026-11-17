@@ -1,2 +1,0 @@
-ALTER TABLE test_execution
-    ADD COLUMN is_stale BOOLEAN NOT NULL DEFAULT FALSE;
