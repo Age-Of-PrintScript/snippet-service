@@ -54,9 +54,18 @@ class InMemorySnippetTestRepository(
         }
     }
 
+    override fun deleteById(id: SnippetTestId) {
+        savedTests.removeIf { it.first.id == id }
+    }
+
     override fun save(test: SnippetTest): SnippetTestSummary {
         saveFailure?.let { throw it }
-        savedTests += test to test.contentUrl
+        val index = savedTests.indexOfFirst { it.first.id == test.id }
+        if (index >= 0) {
+            savedTests[index] = test to test.contentUrl
+        } else {
+            savedTests += test to test.contentUrl
+        }
         return SnippetTestSummary(
             id = test.id,
             snippetId = test.snippetId,
