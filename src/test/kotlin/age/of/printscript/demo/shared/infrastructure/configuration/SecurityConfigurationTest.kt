@@ -14,6 +14,7 @@ import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.infrastructure.controller.SnippetController
 import age.of.printscript.demo.testing.application.CreateSnippetTest
+import age.of.printscript.demo.testing.application.DeleteSnippetTest
 import age.of.printscript.demo.testing.application.FakeSnippetTestStorage
 import age.of.printscript.demo.testing.application.InMemorySnippetTestRepository
 import age.of.printscript.demo.testing.infrastructure.controller.TestController
@@ -93,6 +94,16 @@ class SecurityConfigurationTest {
                 FakeSnippetTestStorage(),
             )
         }
+
+        @Bean
+        fun deleteSnippetTest(): DeleteSnippetTest {
+            val snippet = createDummySnippet(ownerId = UserId("auth0|alice"))
+            return DeleteSnippetTest(
+                InMemorySnippetRepository(listOf(snippet)),
+                InMemorySnippetTestRepository(),
+                FakeSnippetTestStorage(),
+            )
+        }
     }
 
     @Autowired
@@ -155,6 +166,13 @@ class SecurityConfigurationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(createTestBody),
             ).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `DELETE snippet test without token returns 401`() {
+        mockMvc
+            .perform(delete("/snippet/test/t1"))
+            .andExpect(status().isUnauthorized)
     }
 
     @Test

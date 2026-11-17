@@ -13,6 +13,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.verify
 import org.springframework.dao.DataIntegrityViolationException
 import java.time.Instant
 import java.util.UUID
@@ -65,6 +66,25 @@ class PostgresSnippetTestRepositoryTest {
 
         org.junit.jupiter.api.Assertions.assertThrows(SnippetTestPersistenceException::class.java) {
             repository.save(test)
+        }
+    }
+
+    @Test
+    fun `deleteById delegates to jpaRepository`() {
+        val testId = UUID.randomUUID()
+
+        repository.deleteById(SnippetTestId(testId.toString()))
+
+        verify(jpaRepository).deleteById(testId)
+    }
+
+    @Test
+    fun `deleteById translates database errors to application exception`() {
+        val testId = UUID.randomUUID()
+        doThrow(DataIntegrityViolationException("Database unavailable")).`when`(jpaRepository).deleteById(testId)
+
+        org.junit.jupiter.api.Assertions.assertThrows(SnippetTestPersistenceException::class.java) {
+            repository.deleteById(SnippetTestId(testId.toString()))
         }
     }
 }
