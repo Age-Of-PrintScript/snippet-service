@@ -8,11 +8,13 @@ import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.FakeSnippetStorage
 import age.of.printscript.demo.snippet.application.GetSnippet
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
+import age.of.printscript.demo.snippet.application.ListSnippetVersions
 import age.of.printscript.demo.snippet.application.ListSnippets
 import age.of.printscript.demo.snippet.application.UpdateSnippet
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.application.testJwt
 import age.of.printscript.demo.snippet.domain.Language
+import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.domain.ValidationError
 import age.of.printscript.demo.snippet.domain.ValidationResult
@@ -31,6 +33,7 @@ class SnippetControllerTest {
     ) = SnippetController(
         getSnippet = GetSnippet(repo, storage, permissions),
         listSnippets = ListSnippets(permissions, repo, InMemorySnippetLintStatusRepository()),
+        listSnippetVersions = ListSnippetVersions(repo, permissions),
         createSnippet = CreateSnippet(repo, storage, languages, permissions),
         updateSnippet = UpdateSnippet(repo, storage, languages),
         deleteSnippet = DeleteSnippet(repo, storage),
@@ -217,5 +220,45 @@ class SnippetControllerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
         assertEquals(mapOf("error" to "Unsupported version: 9.9"), response.body)
+    }
+
+    @Test
+    fun `listVersions returns 200 with versions when user is owner`() {
+        val snippetId = SnippetId("snippet-1")
+        val v1 = createDummySnippet(id = snippetId, ownerId = UserId("alice"), version = 1).copy(isLatest = false)
+        val v2 = createDummySnippet(id = snippetId, ownerId = UserId("alice"), version = 2).copy(isLatest = true)
+        val repo = InMemorySnippetRepository(listOf(v1, v2))
+        val controller = buildController(repo = repo)
+
+        val response = controller.listVersions(snippetId.value, testJwt("alice"))
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        val body = response.body
+        assertEquals(2, body?.size)
+        assertEquals(2, body?.get(0)?.version)
+        assertEquals(true, body?.get(0)?.isLatest)
+        assertEquals(1, body?.get(1)?.version)
+        assertEquals(false, body?.get(1)?.isLatest)
+    }
+
+    @Test
+    fun `listVersions returns 403 FORBIDDEN when user has no access`() {
+        val snippetId = SnippetId("snippet-1")
+        val snippet = createDummySnippet(id = snippetId, ownerId = UserId("alice"), version = 1)
+        val repo = InMemorySnippetRepository(listOf(snippet))
+        val controller = buildController(repo = repo)
+
+        val response = controller.listVersions(snippetId.value, testJwt("bob"))
+
+        assertEquals(HttpStatus.FORBIDDEN, response.statusCode)
+    }
+
+    @Test
+    fun `listVersions returns 404 NOT FOUND when snippet does not exist`() {
+        val controller = buildController()
+
+        val response = controller.listVersions("unknown-id", testJwt("alice"))
+
+        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
     }
 }
