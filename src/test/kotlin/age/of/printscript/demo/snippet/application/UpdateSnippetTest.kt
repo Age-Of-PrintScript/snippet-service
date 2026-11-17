@@ -150,6 +150,10 @@ class UpdateSnippetTest {
                     pageSize: Int,
                 ): SnippetPage = SnippetPage(emptyList(), 0)
 
+                override fun findAllVersions(id: SnippetId): List<Snippet> = emptyList()
+
+                override fun deleteById(id: SnippetId) = Unit
+
                 override fun save(snippet: Snippet): Snippet = error("Database unavailable")
             }
         val storage = FakeSnippetStorage()
