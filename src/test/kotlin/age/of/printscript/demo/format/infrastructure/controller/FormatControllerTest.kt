@@ -5,6 +5,7 @@ import age.of.printscript.demo.format.application.FormatSnippet
 import age.of.printscript.demo.format.application.GetFormatRules
 import age.of.printscript.demo.format.application.InMemoryFormatRuleRepository
 import age.of.printscript.demo.format.application.UpdateFormatRules
+import age.of.printscript.demo.format.domain.ActiveFormatRule
 import age.of.printscript.demo.format.domain.FormatRule
 import age.of.printscript.demo.format.domain.FormatRuleId
 import age.of.printscript.demo.jobs.application.FakeJobPublisher
@@ -43,7 +44,7 @@ class FormatControllerTest {
                 formatRuleRepo = InMemoryFormatRuleRepository(rules),
             )
 
-        val response = controller.getRules()
+        val response = controller.getRules(testJwt("alice"))
 
         assertEquals(HttpStatus.OK, response.statusCode)
         val body = response.body
@@ -57,11 +58,24 @@ class FormatControllerTest {
     fun `returns 200 OK with empty list when no format rules exist`() {
         val controller = buildController()
 
-        val response = controller.getRules()
+        val response = controller.getRules(testJwt("alice"))
 
         assertEquals(HttpStatus.OK, response.statusCode)
         val body = response.body
         assertEquals(0, body?.rules?.size)
+    }
+
+    @Test
+    fun `returns 200 OK with the requesting user's active rules`() {
+        val rules = listOf(FormatRule(FormatRuleId(1), "indent-inside-if", defaultValue = 4))
+        val activeRule = ActiveFormatRule(UserId("alice"), FormatRuleId(1), value = 2)
+        val formatRuleRepo = InMemoryFormatRuleRepository(initialRules = rules, initialActiveRules = listOf(activeRule))
+        val controller = buildController(formatRuleRepo = formatRuleRepo)
+
+        val response = controller.getRules(testJwt("alice"))
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals(listOf(ActiveFormatRuleResponse(ruleId = 1, value = 2)), response.body?.activeRules)
     }
 
     @Test

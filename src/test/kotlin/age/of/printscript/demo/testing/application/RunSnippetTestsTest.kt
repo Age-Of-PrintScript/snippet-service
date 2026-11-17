@@ -139,7 +139,14 @@ class RunSnippetTestsTest {
     private fun addTest(snippetId: SnippetId = snippet.id): SnippetTest {
         val id = SnippetTestId(UUID.randomUUID().toString())
         val test =
-            SnippetTest(id, snippetId, snippet.ownerId, "https://assets/tests/${id.value}", SnippetTestStatus.PASSED)
+            SnippetTest(
+                id,
+                snippetId,
+                snippet.ownerId,
+                "Run test",
+                "https://assets/tests/${id.value}",
+                SnippetTestStatus.PASSED,
+            )
         tests.save(test)
         return test
     }

@@ -41,6 +41,7 @@ class PostgresSnippetRepositoryTest {
                 SnippetTestId("pending"),
                 original.id,
                 original.ownerId,
+                "Pending test",
                 "test-url",
                 SnippetTestStatus.PENDING,
                 JobId("job"),
@@ -70,6 +71,7 @@ class PostgresSnippetRepositoryTest {
                 SnippetTestId("test"),
                 original.id,
                 original.ownerId,
+                "Passed test",
                 "test-url",
                 SnippetTestStatus.PASSED,
             )

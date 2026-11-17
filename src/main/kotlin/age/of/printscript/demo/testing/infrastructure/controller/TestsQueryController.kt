@@ -19,6 +19,7 @@ import java.time.Instant
 
 data class TestListItemResponse(
     val id: String,
+    val name: String,
     val snippetId: String,
     val createdAt: Instant,
     val inputs: List<String>,
@@ -70,12 +71,13 @@ class TestsQueryController(
                 ResponseEntity.ok(
                     result.tests.map { test ->
                         TestListItemResponse(
-                            test.id.value,
-                            test.snippetId.value,
-                            test.createdAt,
-                            test.content.inputs,
-                            test.content.outputs,
-                            test.status.name,
+                            id = test.id.value,
+                            name = test.name,
+                            snippetId = test.snippetId.value,
+                            createdAt = test.createdAt,
+                            inputs = test.content.inputs,
+                            outputs = test.content.outputs,
+                            status = test.status.name,
                         )
                     },
                 )

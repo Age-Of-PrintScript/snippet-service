@@ -24,6 +24,7 @@ class SnippetTestMappersTest {
                 id = testId,
                 snippetId = snippetId,
                 ownerId = "auth0|user",
+                name = "Edge case zero",
                 url = "https://azure.blob/test-1",
                 createdAt = now,
                 updatedAt = now,
@@ -35,6 +36,7 @@ class SnippetTestMappersTest {
         assertEquals(SnippetTestId(testId.toString()), summary.id)
         assertEquals(SnippetId(snippetId.toString()), summary.snippetId)
         assertEquals(UserId("auth0|user"), summary.ownerId)
+        assertEquals("Edge case zero", summary.name)
         assertEquals(now, summary.createdAt)
         assertEquals(SnippetTestStatus.PASSED, summary.status)
     }
@@ -49,6 +51,7 @@ class SnippetTestMappersTest {
                 id = testId,
                 snippetId = snippetId,
                 ownerId = "auth0|user",
+                name = "Edge case zero",
                 url = "https://azure.blob/test-1",
                 status = "PENDING",
                 activeJobId = jobId,
@@ -58,6 +61,7 @@ class SnippetTestMappersTest {
         assertEquals(SnippetTestId(testId.toString()), domain.id)
         assertEquals(SnippetId(snippetId.toString()), domain.snippetId)
         assertEquals(UserId("auth0|user"), domain.ownerId)
+        assertEquals("Edge case zero", domain.name)
         assertEquals("https://azure.blob/test-1", domain.contentUrl)
         assertEquals(SnippetTestStatus.PENDING, domain.status)
         assertEquals(JobId(jobId.toString()), domain.activeJobId)
@@ -72,6 +76,7 @@ class SnippetTestMappersTest {
                 id = SnippetTestId(testId.toString()),
                 snippetId = SnippetId(snippetId.toString()),
                 ownerId = UserId("auth0|user"),
+                name = "Edge case zero",
                 contentUrl = "https://azure.blob/test-1",
             )
 
@@ -80,6 +85,7 @@ class SnippetTestMappersTest {
         assertEquals(testId, entity.id)
         assertEquals(snippetId, entity.snippetId)
         assertEquals("auth0|user", entity.ownerId)
+        assertEquals("Edge case zero", entity.name)
         assertEquals("https://azure.blob/test-1", entity.url)
         assertEquals("NOT_RUN", entity.status)
         assertNull(entity.activeJobId)
@@ -92,6 +98,7 @@ class SnippetTestMappersTest {
                 id = SnippetTestId(UUID.randomUUID().toString()),
                 snippetId = SnippetId(UUID.randomUUID().toString()),
                 ownerId = UserId("auth0|user"),
+                name = "Failed test",
                 contentUrl = "https://azure.blob/test-1",
                 status = SnippetTestStatus.FAILED,
                 activeJobId = JobId(UUID.randomUUID().toString()),
