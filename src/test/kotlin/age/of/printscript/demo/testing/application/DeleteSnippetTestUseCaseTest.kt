@@ -1,5 +1,6 @@
 package age.of.printscript.demo.testing.application
 
+import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.SnippetId
@@ -102,5 +103,17 @@ class DeleteSnippetTestUseCaseTest {
         assertEquals(DeleteSnippetTestResult.Forbidden, result)
         assertEquals(test, testRepo.findById(test.id))
         assertTrue(storage.deletedUrls.isEmpty())
+    }
+
+    @Test
+    fun `allows editor with write permission to delete test`() {
+        val test = addTest()
+        val permissions = FakePermissionGateway(writableUsers = setOf(snippet.id to UserId("bob")))
+        val useCase = DeleteSnippetTest(snippetRepo, testRepo, storage, permissions)
+
+        val result = useCase(DeleteSnippetTestDto(testId = test.id, requesterId = UserId("bob")))
+
+        assertEquals(DeleteSnippetTestResult.Success, result)
+        assertNull(testRepo.findById(test.id))
     }
 }

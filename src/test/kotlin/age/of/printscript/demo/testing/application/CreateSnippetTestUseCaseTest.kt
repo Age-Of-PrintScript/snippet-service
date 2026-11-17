@@ -1,6 +1,7 @@
 package age.of.printscript.demo.testing.application
 
 import age.of.printscript.demo.jobs.domain.JobId
+import age.of.printscript.demo.snippet.application.FakePermissionGateway
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
 import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.SnippetId
@@ -223,5 +224,24 @@ class CreateSnippetTestUseCaseTest {
         val result = createTest(request(ownerId = UserId("bob")).copy(id = testId))
 
         assertEquals(CreateSnippetTestResult.Forbidden, result)
+    }
+
+    @Test
+    fun `allows editor with write permission to create test`() {
+        val snippet = createDummySnippet(ownerId = UserId("alice"))
+        val testRepository = InMemorySnippetTestRepository()
+        val storage = FakeSnippetTestStorage()
+        val permissions = FakePermissionGateway(writableUsers = setOf(snippet.id to UserId("bob")))
+        val createTest =
+            CreateSnippetTest(
+                snippetRepository = InMemorySnippetRepository(listOf(snippet)),
+                snippetTestRepository = testRepository,
+                snippetTestStorage = storage,
+                permissionGateway = permissions,
+            )
+
+        val result = createTest(request(snippetId = snippet.id, ownerId = UserId("bob"), name = "Editor test"))
+
+        assertTrue(result is CreateSnippetTestResult.Created)
     }
 }

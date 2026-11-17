@@ -13,10 +13,22 @@ class PermissionService(
     private val permissionRestClient: RestClient,
 ) : PermissionGateway {
     private val readPermission = "snippet:read"
+    private val writePermission = "snippet:write"
 
     override fun hasReadAccess(
         snippetId: SnippetId,
         userId: UserId,
+    ): Boolean = hasPermission(snippetId, userId, readPermission)
+
+    override fun hasWriteAccess(
+        snippetId: SnippetId,
+        userId: UserId,
+    ): Boolean = hasPermission(snippetId, userId, writePermission)
+
+    private fun hasPermission(
+        snippetId: SnippetId,
+        userId: UserId,
+        permission: String,
     ): Boolean {
         val permissions =
             permissionRestClient
@@ -25,7 +37,7 @@ class PermissionService(
                 .retrieve()
                 .body<List<PermissionResponse>>()
 
-        return permissions?.any { it.name == readPermission } ?: false
+        return permissions?.any { it.name == permission } ?: false
     }
 
     override fun registerOwner(snippetId: SnippetId) {

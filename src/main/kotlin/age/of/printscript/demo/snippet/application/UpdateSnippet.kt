@@ -2,6 +2,7 @@ package age.of.printscript.demo.snippet.application
 
 import age.of.printscript.demo.lint.application.LintSnippet
 import age.of.printscript.demo.shared.application.UseCase
+import age.of.printscript.demo.snippet.application.port.PermissionGateway
 import age.of.printscript.demo.snippet.application.port.SnippetStorage
 import age.of.printscript.demo.snippet.domain.Language
 import age.of.printscript.demo.snippet.domain.Snippet
@@ -23,6 +24,7 @@ class UpdateSnippet(
     private val languages: List<Language>,
     private val lintSnippet: LintSnippet? = null,
     private val runSnippetTests: RunSnippetTests? = null,
+    private val permissionGateway: PermissionGateway? = null,
 ) : UseCase {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -32,7 +34,8 @@ class UpdateSnippet(
         content: String,
     ): UpdateSnippetResult {
         val current = snippetRepository.findLatest(id) ?: return UpdateSnippetResult.NotFound
-        return if (current.ownerId != userId) {
+        val hasAccess = current.ownerId == userId || permissionGateway?.hasWriteAccess(id, userId) == true
+        return if (!hasAccess) {
             UpdateSnippetResult.Forbidden
         } else {
             validateAndSave(current, content)
