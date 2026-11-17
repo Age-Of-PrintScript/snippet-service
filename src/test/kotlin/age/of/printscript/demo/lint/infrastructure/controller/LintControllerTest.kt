@@ -3,10 +3,12 @@ package age.of.printscript.demo.lint.infrastructure.controller
 import age.of.printscript.demo.jobs.application.FakeJobPublisher
 import age.of.printscript.demo.jobs.application.InMemoryJobRepository
 import age.of.printscript.demo.lint.application.FakeLintBatchScheduler
+import age.of.printscript.demo.lint.application.GetLintRules
 import age.of.printscript.demo.lint.application.InMemoryLintRuleRepository
 import age.of.printscript.demo.lint.application.InMemorySnippetLintStatusRepository
 import age.of.printscript.demo.lint.application.LintSnippet
 import age.of.printscript.demo.lint.application.UpdateLintRules
+import age.of.printscript.demo.lint.domain.ActiveLintRule
 import age.of.printscript.demo.lint.domain.LintRule
 import age.of.printscript.demo.lint.domain.LintRuleId
 import age.of.printscript.demo.snippet.application.InMemorySnippetRepository
@@ -28,9 +30,24 @@ class LintControllerTest {
         val jobPublisher = FakeJobPublisher()
         val batchScheduler = FakeLintBatchScheduler()
         return LintController(
+            getLintRules = GetLintRules(lintRuleRepo),
             lintSnippet = LintSnippet(jobPublisher, snippetRepo, lintRuleRepo, lintStatusRepo, jobRepo),
             updateLintRules = UpdateLintRules(lintRuleRepo, snippetRepo, lintStatusRepo, batchScheduler),
         )
+    }
+
+    @Test
+    fun `getRules returns 200 OK with the requesting user's active rules`() {
+        val rules = listOf(LintRule(LintRuleId(1), "identifier-format", "camelCase"))
+        val activeRule = ActiveLintRule(UserId("alice"), LintRuleId(1), value = "snake_case")
+        val lintRuleRepo = InMemoryLintRuleRepository(initialRules = rules, initialActiveRules = listOf(activeRule))
+        val controller = buildController(lintRuleRepo = lintRuleRepo)
+
+        val response = controller.getRules(testJwt("alice"))
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        assertEquals(1, response.body?.rules?.size)
+        assertEquals(listOf(ActiveLintRuleResponse(ruleId = 1, value = "snake_case")), response.body?.activeRules)
     }
 
     @Test

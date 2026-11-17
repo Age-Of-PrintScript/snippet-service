@@ -1,11 +1,13 @@
 package age.of.printscript.demo.lint.infrastructure.controller
 
+import age.of.printscript.demo.lint.application.GetLintRules
 import age.of.printscript.demo.lint.application.LintSnippet
 import age.of.printscript.demo.lint.application.LintSnippetResult
 import age.of.printscript.demo.lint.application.RuleSelection
 import age.of.printscript.demo.lint.application.UpdateLintRules
 import age.of.printscript.demo.lint.application.UpdateLintRulesResult
 import age.of.printscript.demo.lint.domain.ActiveLintRule
+import age.of.printscript.demo.lint.domain.LintRule
 import age.of.printscript.demo.lint.domain.LintRuleId
 import age.of.printscript.demo.snippet.domain.SnippetId
 import age.of.printscript.demo.snippet.domain.UserId
@@ -14,6 +16,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -24,6 +27,24 @@ import org.springframework.web.bind.annotation.RestController
 data class LintJobAcceptedResponse(
     val jobId: String,
 )
+
+data class LintRuleResponse(
+    val id: Int,
+    val name: String,
+    val defaultValue: String?,
+)
+
+data class LintRulesResponse(
+    val rules: List<LintRuleResponse>,
+    val activeRules: List<ActiveLintRuleResponse>,
+)
+
+private fun LintRule.toResponse() =
+    LintRuleResponse(
+        id = id.value,
+        name = name,
+        defaultValue = defaultValue,
+    )
 
 data class LintRuleSelectionRequest(
     val ruleId: Int,
@@ -74,10 +95,30 @@ private fun UpdateLintRulesResult.toResponseEntity(): ResponseEntity<Any> =
 @RestController
 @RequestMapping("/lint")
 class LintController(
+    private val getLintRules: GetLintRules,
     private val lintSnippet: LintSnippet,
     private val updateLintRules: UpdateLintRules,
 ) {
     private val log = LoggerFactory.getLogger(LintController::class.java)
+
+    @GetMapping("/rules")
+    fun getRules(
+        @AuthenticationPrincipal jwt: Jwt,
+    ): ResponseEntity<LintRulesResponse> {
+        val snapshot = getLintRules(UserId(jwt.subject))
+        log.info(
+            "Fetched {} lint rules ({} active) for userId={}",
+            snapshot.rules.size,
+            snapshot.activeRules.size,
+            jwt.subject,
+        )
+        return ResponseEntity.ok(
+            LintRulesResponse(
+                rules = snapshot.rules.map { it.toResponse() },
+                activeRules = snapshot.activeRules.map { it.toResponse() },
+            ),
+        )
+    }
 
     @PutMapping("/rules")
     fun updateRules(
