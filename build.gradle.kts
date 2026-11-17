@@ -22,14 +22,25 @@ repositories {
     }
 }
 
+val newRelicVersion = "9.5.0"
+
+val newrelic = configurations.create("newrelic") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+}
+
 dependencies {
+    newrelic("com.newrelic.agent.java:newrelic-agent:$newRelicVersion")
+
     implementation(platform("org.springframework.boot:spring-boot-dependencies:3.4.3"))
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("printscript.grupo1:printscript-jobs:1.0.1")
+    implementation("printscript.grupo1:printscript-jobs:1.0.3")
+    implementation("com.newrelic.agent.java:newrelic-api:$newRelicVersion")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     runtimeOnly("org.postgresql:postgresql")
@@ -84,4 +95,14 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
             },
         ),
     )
+}
+
+tasks.register<Sync>("copyNewRelic") {
+    from(newrelic) {
+        rename { "newrelic.jar" }
+    }
+    from("newrelic") {
+        include("newrelic.yml")
+    }
+    into(layout.buildDirectory.dir("newrelic"))
 }

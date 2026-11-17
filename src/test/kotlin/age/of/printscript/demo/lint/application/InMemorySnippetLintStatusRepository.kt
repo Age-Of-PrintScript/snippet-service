@@ -19,6 +19,12 @@ class InMemorySnippetLintStatusRepository(
         version: Int,
     ): SnippetLintStatus? = statuses[snippetId to version]
 
+    override fun findStatuses(snippets: List<Snippet>): Map<SnippetId, LintStatus> =
+        snippets
+            .mapNotNull { snippet ->
+                statuses[snippet.id to snippet.version]?.let { snippet.id to it.status }
+            }.toMap()
+
     override fun save(lintStatus: SnippetLintStatus): SnippetLintStatus {
         statuses[lintStatus.snippetId to lintStatus.version] = lintStatus
         return lintStatus

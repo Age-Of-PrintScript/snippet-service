@@ -5,6 +5,7 @@ import age.of.printscript.jobs.JobSerializer
 import age.of.printscript.jobs.LintJobRequest
 import age.of.printscript.jobs.PAYLOAD_FIELD
 import age.of.printscript.jobs.QueueNames
+import age.of.printscript.jobs.TestJobRequest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
@@ -49,6 +50,30 @@ class RedisJobPublisherTest {
                 rules = rules,
             ),
             deserialized,
+        )
+    }
+
+    @Test
+    fun `publishTestJob sends the snippet and frozen test URLs`() {
+        `when`(redisTemplate.opsForStream<String, String>()).thenReturn(streamOperations)
+        val snippet = createDummySnippet()
+
+        publisher.publishTestJob("job-test", snippet, "https://asset/test-snapshot")
+
+        @Suppress("UNCHECKED_CAST")
+        val mapCaptor: ArgumentCaptor<Map<String, String>> =
+            ArgumentCaptor.forClass(Map::class.java) as ArgumentCaptor<Map<String, String>>
+        verify(streamOperations).add(eq(QueueNames.REQUESTS_STREAM), mapCaptor.capture())
+        val payload = mapCaptor.value[PAYLOAD_FIELD]!!
+        assertEquals(
+            TestJobRequest(
+                jobId = "job-test",
+                snippetId = snippet.id.value,
+                snippetUrl = snippet.contentUrl,
+                languageVersion = snippet.languageVersion,
+                testUrl = "https://asset/test-snapshot",
+            ),
+            JobSerializer.deserializeRequest(payload),
         )
     }
 }

@@ -1,6 +1,8 @@
 package age.of.printscript.demo.snippet.application
 
+import age.of.printscript.demo.lint.application.LintSnippet
 import age.of.printscript.demo.shared.application.UseCase
+import age.of.printscript.demo.snippet.application.port.PermissionGateway
 import age.of.printscript.demo.snippet.application.port.SnippetStorage
 import age.of.printscript.demo.snippet.domain.Language
 import age.of.printscript.demo.snippet.domain.Snippet
@@ -11,13 +13,18 @@ import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.domain.ValidationError
 import age.of.printscript.demo.snippet.domain.ValidationResult
 import age.of.printscript.demo.snippet.domain.withContent
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 class CreateSnippet(
     private val snippetRepository: SnippetRepository,
     private val snippetStorage: SnippetStorage,
     private val languages: List<Language>,
+    private val permissionGateway: PermissionGateway,
+    private val lintSnippet: LintSnippet? = null,
 ) : UseCase {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     operator fun invoke(
         createSnippet: CreateSnippetDto,
         content: String,
@@ -41,8 +48,12 @@ class CreateSnippet(
                     CreateSnippetResult.UnsupportedVersion(languageVersion)
                 }
                 is ValidationResult.Success -> {
+                    // Si falla, runCatching borra el contenido y no se guarda el snippet.
+                    permissionGateway.registerOwner(id)
                     val snippet = snippetFromDto(createSnippet, id, contentUrl, version)
                     val saved = snippetRepository.save(snippet)
+                    runCatching { lintSnippet?.invoke(saved.id, saved.ownerId) }
+                        .onFailure { logger.warn("Failed to enqueue lint job for snippet {}", saved.id.value, it) }
                     CreateSnippetResult.Created(saved.withContent(content))
                 }
             }
