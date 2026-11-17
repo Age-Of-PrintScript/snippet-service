@@ -13,6 +13,7 @@ import age.of.printscript.demo.snippet.application.createDummySnippet
 import age.of.printscript.demo.snippet.domain.UserId
 import age.of.printscript.demo.snippet.infrastructure.controller.SnippetController
 import age.of.printscript.demo.testing.application.CreateSnippetTest
+import age.of.printscript.demo.testing.application.DeleteSnippetTest
 import age.of.printscript.demo.testing.application.FakeSnippetTestStorage
 import age.of.printscript.demo.testing.application.InMemorySnippetTestRepository
 import age.of.printscript.demo.testing.infrastructure.controller.TestController
@@ -32,6 +33,7 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity
 import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
@@ -83,6 +85,16 @@ class SecurityConfigurationTest {
         fun createSnippetTest(): CreateSnippetTest {
             val snippet = createDummySnippet(ownerId = UserId("auth0|alice"))
             return CreateSnippetTest(
+                InMemorySnippetRepository(listOf(snippet)),
+                InMemorySnippetTestRepository(),
+                FakeSnippetTestStorage(),
+            )
+        }
+
+        @Bean
+        fun deleteSnippetTest(): DeleteSnippetTest {
+            val snippet = createDummySnippet(ownerId = UserId("auth0|alice"))
+            return DeleteSnippetTest(
                 InMemorySnippetRepository(listOf(snippet)),
                 InMemorySnippetTestRepository(),
                 FakeSnippetTestStorage(),
@@ -145,6 +157,13 @@ class SecurityConfigurationTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(createTestBody),
             ).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `DELETE snippet test without token returns 401`() {
+        mockMvc
+            .perform(delete("/snippet/test/t1"))
+            .andExpect(status().isUnauthorized)
     }
 
     @Test
